@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>2. Donem Takip</title>
+<style>
+  :root{
+    --navy:#1F4E78;
+    --navy-deep:#123152;
+    --navy-soft:#e8eef5;
+    --accent:#c96a3c;
+    --accent-soft:#f7e6dc;
+    --good:#2f8f5b;
+    --good-soft:#e3f3ea;
+    --paper:#fbfaf7;
+    --line:#e2e0d8;
+    --ink:#25262b;
+    --ink-soft:#6b6f76;
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style",serif; margin:0;}
+  .num{font-variant-numeric:tabular-nums;}
+
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:var(--navy); color:#fff;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.12);
+  }
+  header.top .back{
+    font-size:22px; line-height:1; padding:6px 10px; margin:-6px 0 -6px -10px;
+    cursor:pointer; opacity:.9; border-radius:8px;
+  }
+  header.top .back:active{background:rgba(255,255,255,.15);}
+  header.top h1{font-size:18px; font-weight:600; flex:1; letter-spacing:.2px;}
+  header.top .sub{font-size:12px; opacity:.8; font-family:inherit;}
+
+  .classbar{display:flex; gap:8px; padding:10px 14px; background:var(--navy-deep); overflow-x:auto;}
+  .classbar button{border:none; background:rgba(255,255,255,.12); color:#fff; padding:9px 18px; border-radius:999px; font-size:14px; font-weight:600; white-space:nowrap;}
+  .classbar button.active{background:var(--accent); color:#fff;}
+
+  main{padding:14px 14px 60px; max-width:720px; margin:0 auto;}
+
+  .card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:10px;}
+  .studentcard{display:flex; align-items:center; gap:12px; cursor:pointer;}
+  .studentcard:active{background:#f5f4f0;}
+  .studentcard .no{font-size:11px; color:var(--ink-soft); width:28px; flex-shrink:0; text-align:center;}
+  .studentcard .name{flex:1; font-size:15.5px; font-weight:600;}
+  .studentcard .pct{font-size:13px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--navy-soft); color:var(--navy); min-width:44px; text-align:center;}
+  .studentcard .pct.low{background:var(--accent-soft); color:var(--accent);}
+  .studentcard .chev{color:var(--ink-soft); font-size:18px;}
+
+  .sectiontitle{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--navy); font-weight:700; margin:22px 0 8px; display:flex; align-items:center; gap:8px;}
+  .sectiontitle:first-child{margin-top:4px;}
+  .sectiontitle .line{flex:1; height:1px; background:var(--line);}
+
+  .fab{position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; font-size:28px; border:none; box-shadow:0 4px 14px rgba(0,0,0,.25); z-index:15; display:flex; align-items:center; justify-content:center;}
+  .fab:active{transform:scale(.94);}
+
+  .infobar{display:flex; justify-content:space-between; align-items:center; background:var(--navy-soft); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px; font-size:13.5px; color:var(--navy);}
+  .infobar b{font-size:16px;}
+
+  .detail-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .field{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center;}
+  .field label{display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;}
+  .field input{width:100%; border:none; text-align:center; font-size:16px; font-weight:700; color:var(--navy); background:transparent; font-family:inherit;}
+  .field input:focus{outline:2px solid var(--navy); border-radius:6px;}
+
+  .hwrow{display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--line);}
+  .hwrow:last-child{border-bottom:none;}
+  .hwrow .topic{flex:1;}
+  .hwrow .topic .t{font-size:14.5px; font-weight:600;}
+  .hwrow .topic .d{font-size:12px; color:var(--ink-soft);}
+  .hwrow.future .topic .t, .hwrow.future .topic .d{color:var(--ink-soft); font-style:italic;}
+
+  .toggle{width:50px; height:30px; border-radius:999px; background:#dcdad2; position:relative; flex-shrink:0; border:none;}
+  .toggle.on{background:var(--good);}
+  .toggle .knob{position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s ease; box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .toggle.on .knob{left:23px;}
+
+  textarea.note{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px; font-family:inherit; font-size:14px; min-height:70px; resize:vertical; background:#fff;}
+
+  .levelcard{border:2px solid var(--line); border-radius:12px; padding:12px; margin-bottom:8px; cursor:pointer;}
+  .levelcard.sel{border-color:var(--good); background:var(--good-soft);}
+  .levelcard .lh{display:flex; justify-content:space-between; font-weight:700; font-size:14px; margin-bottom:4px;}
+  .levelcard .lh .score{color:var(--navy);}
+  .levelcard .desc{font-size:12.5px; color:var(--ink-soft); line-height:1.4;}
+
+  .critblock{margin-bottom:20px;}
+  .critblock h3{font-size:14.5px; margin-bottom:8px; color:var(--ink); font-family:inherit;}
+  .critblock .max{font-size:12px; color:var(--ink-soft); font-weight:400;}
+
+  .rubricsummary{display:flex; justify-content:space-between; align-items:center; background:var(--navy); color:#fff; border-radius:var(--radius); padding:14px 16px; margin:16px 0;}
+  .rubricsummary .num{font-size:26px; font-weight:700;}
+  .rubricsummary .lbl{font-size:11px; opacity:.8; text-transform:uppercase;}
+
+  .levelpicker{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px;}
+  .levelpicker button{border:none; background:var(--navy-soft); color:var(--navy); padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; white-space:nowrap;}
+  .levelpicker button.active{background:var(--navy); color:#fff;}
+
+  .studentpicker{display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px; -webkit-overflow-scrolling:touch;}
+  .studentpicker button{border:1px solid var(--line); background:#fff; padding:8px 14px; border-radius:999px; font-size:13px; white-space:nowrap;}
+  .studentpicker button.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+
+  .rowline{display:flex; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line);}
+  .rowline:last-child{border-bottom:none;}
+  .rowline .slot{width:26px; font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .rowline input[type=text]{flex:2; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:14px; font-family:inherit;}
+  .rowline input[type=date]{flex:1; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:13px; font-family:inherit;}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--ink-soft);}
+  .empty .big{font-size:38px; margin-bottom:8px;}
+
+  .toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 18px; border-radius:999px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:50;}
+  .toast.show{opacity:.95;}
+
+  .loading{text-align:center; padding:60px 20px; color:var(--ink-soft);}
+  .spin{width:28px; height:28px; border:3px solid var(--navy-soft); border-top-color:var(--navy); border-radius:50%; margin:0 auto 12px; animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  a.linklike{color:var(--navy); font-weight:600; text-decoration:none;}
+  .backlink{display:block; margin-bottom:14px; color:var(--navy); font-weight:600; text-decoration:none; font-size:14.5px;}
+</style>
+</head>
+<body>
+
+<header class="top" id="topbar">
+  <div class="back" id="backBtn" style="visibility:hidden">&#8249;</div>
+  <div>
+    <h1 id="topTitle">2. Donem Takip</h1>
+    <div class="sub" id="topSub"></div>
+  </div>
+</header>
+<div class="classbar" id="classbar"></div>
+
+<main id="app"></main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CLASSES = ['10E','9FL','9B'];
+const N_HW = 13;
+
+let state = {
+  cls: CLASSES[0],
+  students: [],
+  homeworks: [],
+  hwStatus: {},
+  rubrics: {},
+  rubricScores: {},
+  view: 'roster',
+  currentStudentId: null,
+  rubricLevel: 'P1',
+  loading: true,
+};
+
+const $app = document.getElementById('app');
+const $classbar = document.getElementById('classbar');
+const $topTitle = document.getElementById('topTitle');
+const $topSub = document.getElementById('topSub');
+const $backBtn = document.getElementById('backBtn');
+const $toast = document.getElementById('toast');
+
+function showToast(msg){
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>$toast.classList.remove('show'), 1600);
+}
+
+function fmtDate(d){
+  if(!d) return null;
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function todayStr(){
+  const t = new Date();
+  return t.toISOString().slice(0,10);
+}
+
+async function loadClass(cls){
+  state.loading = true; render();
+  const { data: students } = await sb.from('students').select('*').eq('class_name',cls).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_name',cls).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows = [];
+  let rubricScoreRows = [];
+  if(ids.length){
+    const r1 = await sb.from('homework_status').select('*').in('student_id', ids);
+    hwStatusRows = r1.data || [];
+    const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids);
+    rubricScoreRows = r2.data || [];
+  }
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_name', cls);
+
+  const hwStatus = {};
+  for(const row of hwStatusRows){
+    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
+    hwStatus[row.student_id][row.slot_no] = row.done;
+  }
+  const rubricScores = {};
+  for(const row of rubricScoreRows){
+    rubricScores[row.student_id] = rubricScores[row.student_id] || {};
+    rubricScores[row.student_id][row.level] = rubricScores[row.student_id][row.level] || {};
+    rubricScores[row.student_id][row.level][row.criteria_index] = row.score;
+  }
+  const rubrics = {};
+  for(const row of (rubricRows||[])){
+    rubrics[row.level] = row.criteria;
+  }
+
+  state.cls = cls;
+  state.students = students || [];
+  state.homeworks = homeworks || [];
+  state.hwStatus = hwStatus;
+  state.rubricScores = rubricScores;
+  state.rubrics = rubrics;
+  state.loading = false;
+  render();
+}
+
+function assignedCount(){
+  const today = todayStr();
+  return state.homeworks.filter(h => h.hw_date && h.hw_date <= today).length;
+}
+function completedCount(studentId){
+  const today = todayStr();
+  const st = state.hwStatus[studentId] || {};
+  let n = 0;
+  for(const h of state.homeworks){
+    if(h.hw_date && h.hw_date <= today && st[h.slot_no]) n++;
+  }
+  return n;
+}
+function pct(studentId){
+  const a = assignedCount();
+  if(a===0) return 0;
+  return Math.round((completedCount(studentId)/a)*100);
+}
+function rubricTotal(studentId, level){
+  const crit = state.rubrics[level] || [];
+  const scores = (state.rubricScores[studentId]||{})[level] || {};
+  let sum = 0, max = 0, any=false;
+  crit.forEach((c,i)=>{
+    max += c.max;
+    if(scores[i]!=null){ sum += scores[i]; any=true; }
+  });
+  return { sum, max, grade: any? Math.round(sum/max*100) : null };
+}
+function studentById(id){ return state.students.find(s=>s.id===id); }
+
+async function toggleHw(studentId, slotNo){
+  const cur = !!(state.hwStatus[studentId]||{})[slotNo];
+  const next = !cur;
+  state.hwStatus[studentId] = state.hwStatus[studentId] || {};
+  state.hwStatus[studentId][slotNo] = next;
+  render();
+  await sb.from('homework_status').upsert({student_id:studentId, slot_no:slotNo, done: next});
+}
+async function updateStudentField(studentId, field, value){
+  const s = studentById(studentId);
+  if(s) s[field] = value;
+  await sb.from('students').update({[field]: value}).eq('id', studentId);
+  showToast('Kaydedildi');
+}
+async function setRubricScore(studentId, level, critIndex, score){
+  state.rubricScores[studentId] = state.rubricScores[studentId] || {};
+  state.rubricScores[studentId][level] = state.rubricScores[studentId][level] || {};
+  state.rubricScores[studentId][level][critIndex] = score;
+  render();
+  await sb.from('rubric_scores').upsert({student_id:studentId, level, criteria_index:critIndex, score});
+  showToast('Puan kaydedildi');
+}
+async function updateHomework(slotNo, field, value){
+  const hw = state.homeworks.find(h=>h.slot_no===slotNo);
+  if(hw) hw[field] = value;
+  await sb.from('homeworks').update({[field]: value}).eq('class_name', state.cls).eq('slot_no', slotNo);
+}
+async function addStudent(name){
+  const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
+  const { data } = await sb.from('students').insert({class_name:state.cls, name, sort_order:maxOrder+1}).select();
+  if(data && data[0]) state.students.push(data[0]);
+  render();
+  showToast('Ogrenci eklendi');
+}
+
+function render(){
+  renderClassbar();
+  renderTopbar();
+  if(state.loading){
+    $app.innerHTML = '<div class="loading"><div class="spin"></div>Yukleniyor...</div>';
+    return;
+  }
+  if(state.view==='roster') renderRoster();
+  else if(state.view==='student') renderStudent();
+  else if(state.view==='homeworks') renderHomeworks();
+  else if(state.view==='rubric') renderRubric();
+}
+
+function renderClassbar(){
+  $classbar.innerHTML = CLASSES.map(c=>
+    '<button class="'+(c===state.cls&&state.view==='roster'?'active':'')+'" data-cls="'+c+'">'+c+'</button>'
+  ).join('');
+  $classbar.querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{ state.view='roster'; loadClass(b.dataset.cls); };
+  });
+}
+
+function renderTopbar(){
+  if(state.view==='roster'){
+    $backBtn.style.visibility='hidden';
+    $topTitle.textContent = state.cls + ' Subesi';
+    $topSub.textContent = state.students.length + ' ogrenci';
+  } else if(state.view==='student'){
+    $backBtn.style.visibility='visible';
+    const s = studentById(state.currentStudentId);
+    $topTitle.textContent = s ? s.name : '';
+    $topSub.textContent = state.cls;
+  } else if(state.view==='homeworks'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Odev Tanimlama';
+    $topSub.textContent = state.cls;
+  } else if(state.view==='rubric'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Performans Rubrigi';
+    $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
+  }
+}
+$backBtn.onclick = ()=>{ state.view='roster'; render(); };
+
+function renderRoster(){
+  const a = assignedCount();
+  $app.innerHTML =
+    '<div class="infobar">' +
+      '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+N_HW+'</div>' +
+      '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
+    '<div id="rosterList"></div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      ['P1','P2','P3'].map(l=>'<button class="levelpicker-btn" data-lvl="'+l+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+l+'</button>').join('') +
+    '</div>';
+  document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  $app.querySelectorAll('.levelpicker-btn').forEach(b=>{
+    b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; state.view='rubric'; state.currentStudentId = state.students[0] ? state.students[0].id : null; render(); };
+  });
+
+  const list = document.getElementById('rosterList');
+  if(!state.students.length){
+    list.innerHTML = '<div class="empty"><div class="big">&#128118;</div>Henuz ogrenci yok.<br>Sag alttaki + ile ekleyebilirsin.</div>';
+  } else {
+    list.innerHTML = state.students.map(s=>{
+      const p = pct(s.id);
+      return '<div class="card studentcard" data-id="'+s.id+'">' +
+        '<div class="no">'+(s.no||'')+'</div>' +
+        '<div class="name">'+escapeHtml(s.name)+'</div>' +
+        '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
+        '<div class="chev">&rsaquo;</div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.studentcard').forEach(el=>{
+      el.onclick = ()=>{ state.currentStudentId = el.dataset.id; state.view='student'; render(); };
+    });
+  }
+  ensureFab('+', ()=>{
+    const name = prompt('Yeni ogrencinin adi soyadi:');
+    if(name && name.trim()) addStudent(name.trim());
+  });
+}
+
+function renderStudent(){
+  removeFab();
+  const s = studentById(state.currentStudentId);
+  if(!s){ state.view='roster'; return render(); }
+  const today = todayStr();
+  const hwRows = state.homeworks.map(h=>{
+    const future = !h.hw_date || h.hw_date > today;
+    const done = !!(state.hwStatus[s.id]||{})[h.slot_no];
+    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
+    return '<div class="hwrow '+(future?'future':'')+'">' +
+      '<div class="topic">' +
+        '<div class="t">'+escapeHtml(topic)+'</div>' +
+        '<div class="d">'+(h.hw_date ? fmtDate(h.hw_date) : 'Tarih girilmedi')+'</div>' +
+      '</div>' +
+      '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slot_no+'" '+(future?'disabled style="opacity:.4"':'')+'><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
+
+  const p1 = rubricTotal(s.id,'P1'), p2 = rubricTotal(s.id,'P2'), p3 = rubricTotal(s.id,'P3');
+
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
+    '<div class="detail-grid">' +
+      '<div class="field"><label>Q1</label><input type="text" data-f="q1" value="'+(s.q1||'')+'"></div>' +
+      '<div class="field"><label>Q2</label><input type="text" data-f="q2" value="'+(s.q2||'')+'"></div>' +
+      '<div class="field"><label>Somestr</label><input type="text" data-f="somestr" value="'+(s.somestr||'')+'"></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
+    '<div class="detail-grid">' +
+      '<div class="field"><label>P1</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p1.grade??'-')+'</div></div>' +
+      '<div class="field"><label>P2</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p2.grade??'-')+'</div></div>' +
+      '<div class="field"><label>P3</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p3.grade??'-')+'</div></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
+    '<div class="card">'+hwRows+'</div>' +
+    '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
+    '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>';
+
+  document.getElementById('toRoster').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('.field input').forEach(inp=>{
+    inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
+  });
+  $app.querySelectorAll('.toggle').forEach(btn=>{
+    if(btn.disabled) return;
+    btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
+  });
+  const noteBox = document.getElementById('noteBox');
+  noteBox.onblur = ()=> updateStudentField(s.id,'teacher_note', noteBox.value);
+}
+
+function renderHomeworks(){
+  removeFab();
+  const rows = state.homeworks.map(h=>
+    '<div class="rowline">' +
+      '<div class="slot">#'+h.slot_no+'</div>' +
+      '<input type="text" placeholder="Konu" value="'+(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
+      '<input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date">' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster2">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="card">'+rows+'</div>' +
+    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">Tarihi bugunden ileri olan odevler, tamamlanma yuzdesine henuz dahil edilmez.</p>';
+  document.getElementById('toRoster2').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value || null);
+  });
+}
+
+function renderRubric(){
+  removeFab();
+  const crit = state.rubrics[state.rubricLevel] || [];
+  const sid = state.currentStudentId;
+  const totals = sid ? rubricTotal(sid, state.rubricLevel) : {sum:0,max:0,grade:null};
+
+  const studentButtons = state.students.map(s=>
+    '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
+  ).join('');
+
+  const critHtml = crit.map((c,ci)=>{
+    const curScore = sid ? ((state.rubricScores[sid]||{})[state.rubricLevel]||{})[ci] : null;
+    const levels = (c.levels||[]).map(lv=>
+      '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
+        '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
+        '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
+      '</div>'
+    ).join('');
+    return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
+  }).join('');
+
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster3">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="levelpicker">' +
+      ['P1','P2','P3'].map(l=>'<button class="'+(l===state.rubricLevel?'active':'')+'" data-lvl="'+l+'">'+l+'</button>').join('') +
+    '</div>' +
+    '<div class="studentpicker">'+studentButtons+'</div>' +
+    (sid ?
+      '<div class="rubricsummary">' +
+        '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
+        '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
+      '</div>' + critHtml
+      : '<div class="empty">Once bir ogrenci secin.</div>');
+
+  document.getElementById('toRoster3').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('.levelpicker button').forEach(b=>{
+    b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
+  });
+  $app.querySelectorAll('.studentpicker button').forEach(b=>{
+    b.onclick = ()=>{ state.currentStudentId = b.dataset.id; render(); };
+  });
+  $app.querySelectorAll('.levelcard').forEach(el=>{
+    el.onclick = ()=>{
+      const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
+      const cur = ((state.rubricScores[sid]||{})[state.rubricLevel]||{})[ci];
+      setRubricScore(sid, state.rubricLevel, ci, cur===score ? null : score);
+    };
+  });
+}
+
+let fabEl = null;
+function ensureFab(label, onClick){
+  removeFab();
+  fabEl = document.createElement('button');
+  fabEl.className = 'fab';
+  fabEl.textContent = label;
+  fabEl.onclick = onClick;
+  document.body.appendChild(fabEl);
+}
+function removeFab(){
+  if(fabEl){ fabEl.remove(); fabEl=null; }
+}
+
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+loadClass(state.cls);
+</script>
+</body>
+</html>
