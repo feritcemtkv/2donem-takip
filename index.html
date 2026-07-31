@@ -150,7 +150,6 @@ const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const LEVELS = ['P1','P2','P3'];
 
 let state = {
   classes: [],
@@ -242,14 +241,19 @@ async function loadClass(cls){
   state.loading = true; render();
   const { data: students } = await sb.from('students').select('*').eq('class_name',cls).order('sort_order');
   const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_name',cls).order('slot_no');
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_name',cls).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_name',cls).order('slot_no');
   const ids = (students||[]).map(s=>s.id);
   let hwStatusRows = [];
   let rubricScoreRows = [];
+  let quizScoreRows = [];
   if(ids.length){
     const r1 = await sb.from('homework_status').select('*').in('student_id', ids);
     hwStatusRows = r1.data || [];
     const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids);
     rubricScoreRows = r2.data || [];
+    const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids);
+    quizScoreRows = r3.data || [];
   }
   const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_name', cls);
 
@@ -268,6 +272,11 @@ async function loadClass(cls){
   for(const row of (rubricRows||[])){
     rubrics[row.level] = row.criteria;
   }
+  const quizScores = {};
+  for(const row of quizScoreRows){
+    quizScores[row.student_id] = quizScores[row.student_id] || {};
+    quizScores[row.student_id][row.slot_no] = row.score;
+  }
 
   state.cls = cls;
   state.students = students || [];
@@ -275,6 +284,10 @@ async function loadClass(cls){
   state.hwStatus = hwStatus;
   state.rubricScores = rubricScores;
   state.rubrics = rubrics;
+  state.quizzes = quizzes || [];
+  state.perfTasks = perfTasks || [];
+  state.quizScores = quizScores;
+  state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
   state.loading = false;
   render();
 }
@@ -323,6 +336,88 @@ async function updateStudentField(studentId, field, value){
   await sb.from('students').update({[field]: value}).eq('id', studentId);
   showToast('Kaydedildi');
 }
+async function addPerfTask(label){
+  const maxSlot = Math.max(0, ...state.perfTasks.map(t=>t.slot_no||0));
+  const { data } = await sb.from('performance_tasks').insert({class_name:state.cls, slot_no:maxSlot+1, label}).select();
+  if(data && data[0]) state.perfTasks.push(data[0]);
+  state.rubricLevel = label;
+  state.view = 'rubric';
+  render();
+  showToast('Performans gorevi eklendi');
+}
+async function renamePerfTask(oldLabel, newLabel){
+  newLabel = newLabel.trim();
+  if(!newLabel || newLabel===oldLabel) return;
+  const t = state.perfTasks.find(x=>x.label===oldLabel);
+  if(t) t.label = newLabel;
+  if(state.rubrics[oldLabel]){ state.rubrics[newLabel] = state.rubrics[oldLabel]; delete state.rubrics[oldLabel]; }
+  for(const sid in state.rubricScores){
+    if(state.rubricScores[sid][oldLabel]){
+      state.rubricScores[sid][newLabel] = state.rubricScores[sid][oldLabel];
+      delete state.rubricScores[sid][oldLabel];
+    }
+  }
+  state.rubricLevel = newLabel;
+  render();
+  await sb.from('performance_tasks').update({label:newLabel}).eq('class_name', state.cls).eq('label', oldLabel);
+  await sb.from('rubrics').update({level:newLabel}).eq('class_name', state.cls).eq('level', oldLabel);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('rubric_scores').update({level:newLabel}).eq('level', oldLabel).in('student_id', ids);
+  }
+  showToast('Isim guncellendi');
+}
+async function deletePerfTask(label){
+  state.perfTasks = state.perfTasks.filter(t=>t.label!==label);
+  delete state.rubrics[label];
+  for(const sid in state.rubricScores){ delete state.rubricScores[sid][label]; }
+  state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
+  state.view = 'roster';
+  render();
+  await sb.from('performance_tasks').delete().eq('class_name', state.cls).eq('label', label);
+  await sb.from('rubrics').delete().eq('class_name', state.cls).eq('level', label);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
+  }
+  showToast('Performans gorevi silindi');
+}
+
+async function addQuiz(){
+  const label = prompt('Yeni quiz adi (orn. Quiz 3):');
+  if(!label || !label.trim()) return;
+  const maxSlot = Math.max(0, ...state.quizzes.map(q=>q.slot_no||0));
+  const { data } = await sb.from('quizzes').insert({class_name:state.cls, slot_no:maxSlot+1, label:label.trim()}).select();
+  if(data && data[0]) state.quizzes.push(data[0]);
+  render();
+  showToast('Quiz eklendi');
+}
+async function renameQuiz(slotNo, label){
+  const q = state.quizzes.find(x=>x.slot_no===slotNo);
+  if(q) q.label = label;
+  await sb.from('quizzes').update({label}).eq('class_name', state.cls).eq('slot_no', slotNo);
+}
+async function deleteQuiz(slotNo){
+  if(!confirm('Bu quiz silinsin mi? Ogrencilerin bu quize ait notlari da silinir.')) return;
+  state.quizzes = state.quizzes.filter(q=>q.slot_no!==slotNo);
+  render();
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
+  }
+  await sb.from('quizzes').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  showToast('Quiz silindi');
+}
+async function updateQuizScore(studentId, slotNo, value){
+  state.quizScores[studentId] = state.quizScores[studentId] || {};
+  state.quizScores[studentId][slotNo] = value;
+  await sb.from('quiz_scores').upsert({student_id:studentId, slot_no:slotNo, score:value});
+  showToast('Kaydedildi');
+}
+
 async function saveRubric(level){
   const criteria = state.rubrics[level] || [];
   await sb.from('rubrics').upsert({class_name: state.cls, level, criteria}, {onConflict:'class_name,level'});
@@ -464,6 +559,7 @@ function render(){
   if(state.view==='roster') renderRoster();
   else if(state.view==='student') renderStudent();
   else if(state.view==='homeworks') renderHomeworks();
+  else if(state.view==='quizzes') renderQuizzes();
   else if(state.view==='rubric') renderRubric();
 }
 
@@ -501,6 +597,10 @@ function renderTopbar(){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Odev Tanimlama';
     $topSub.textContent = state.cls;
+  } else if(state.view==='quizzes'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Quiz Yonetimi';
+    $topSub.textContent = state.cls;
   } else if(state.view==='rubric'){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Performans Rubrigi';
@@ -516,7 +616,10 @@ function renderRoster(){
       '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
       '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
     '</div>' +
-    '<div style="text-align:right; margin:-6px 0 14px;"><a class="linklike" id="backupLink" style="font-size:12.5px;">&#128190; Tum verileri yedekle (JSON indir)</a></div>' +
+    '<div style="display:flex; justify-content:space-between; margin:-6px 0 14px; font-size:12.5px;">' +
+      '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
+      '<a class="linklike" id="backupLink">&#128190; Tum verileri yedekle</a>' +
+    '</div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
     '<div style="display:flex; gap:8px; margin-bottom:10px;">' +
       '<button id="sortNo" style="flex:1; border:none; padding:9px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
@@ -525,15 +628,22 @@ function renderRoster(){
     '<div id="rosterList"></div>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
-      LEVELS.map(l=>'<button class="levelpicker-btn" data-lvl="'+l+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+l+'</button>').join('') +
+      state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
+      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans gorevi yok.</div>' : '') +
     '</div>' +
+    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Gorevi Ekle</button>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:10px;">' +
       '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
       '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
     '</div>';
   document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
   document.getElementById('backupLink').onclick = exportBackup;
+  document.getElementById('addPerfBtn2').onclick = ()=>{
+    const label = prompt('Yeni performans gorevinin adi (orn. Performans 4):');
+    if(label && label.trim()) addPerfTask(label.trim());
+  };
   document.getElementById('renameClsBtn').onclick = ()=>{
     const nn = prompt('Yeni sinif adi:', state.cls);
     if(nn && nn.trim() && nn.trim()!==state.cls) renameClass(state.cls, nn.trim());
@@ -601,7 +711,15 @@ function renderStudent(){
     '</div>';
   }).join('');
 
-  const p1 = rubricTotal(s.id,'P1'), p2 = rubricTotal(s.id,'P2'), p3 = rubricTotal(s.id,'P3');
+  const quizHtml = state.quizzes.map(q=>{
+    const val = (state.quizScores[s.id]||{})[q.slot_no] || '';
+    return '<div class="field"><label>'+escapeHtml(q.label)+'</label><input type="text" data-quiz="'+q.slot_no+'" value="'+escapeHtml(val)+'"></div>';
+  }).join('');
+
+  const perfHtml = state.perfTasks.map(t=>{
+    const total = rubricTotal(s.id, t.label);
+    return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(total.grade??'-')+'</div></div>';
+  }).join('');
 
   $app.innerHTML =
     '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
@@ -609,18 +727,14 @@ function renderStudent(){
     '<div class="detail-grid">' +
       '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
     '</div>' +
-    '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
-    '<div class="detail-grid">' +
-      '<div class="field"><label>Q1</label><input type="text" data-f="q1" value="'+(s.q1||'')+'"></div>' +
-      '<div class="field"><label>Q2</label><input type="text" data-f="q2" value="'+(s.q2||'')+'"></div>' +
-      '<div class="field"><label>Somestr</label><input type="text" data-f="somestr" value="'+(s.somestr||'')+'"></div>' +
-    '</div>' +
-    '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
-    '<div class="detail-grid">' +
-      '<div class="field"><label>P1</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p1.grade??'-')+'</div></div>' +
-      '<div class="field"><label>P2</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p2.grade??'-')+'</div></div>' +
-      '<div class="field"><label>P3</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(p3.grade??'-')+'</div></div>' +
-    '</div>' +
+    (state.quizzes.length ?
+      '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
+      '<div class="detail-grid">'+quizHtml+'</div>'
+      : '') +
+    (state.perfTasks.length ?
+      '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
+      '<div class="detail-grid">'+perfHtml+'</div>'
+      : '') +
     '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
     '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
@@ -641,7 +755,11 @@ function renderStudent(){
     }
   };
   document.getElementById('toRoster').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('[data-quiz]').forEach(inp=>{
+    inp.onblur = ()=> updateQuizScore(s.id, parseInt(inp.dataset.quiz), inp.value);
+  });
   $app.querySelectorAll('.field input').forEach(inp=>{
+    if(inp.dataset.quiz) return;
     inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
   });
   $app.querySelectorAll('.toggle').forEach(btn=>{
@@ -681,6 +799,29 @@ function renderHomeworks(){
   });
 }
 
+function renderQuizzes(){
+  removeFab();
+  const rows = state.quizzes.map(q=>
+    '<div class="rowline">' +
+      '<div class="slot">#'+q.slot_no+'</div>' +
+      '<input type="text" placeholder="Quiz adi" value="'+escapeHtml(q.label||'')+'" data-slot="'+q.slot_no+'" style="flex:1;">' +
+      '<button data-del="'+q.slot_no+'" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster4">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="card">'+(rows||'<div class="empty">Henuz quiz yok.</div>')+'</div>' +
+    '<button id="addQuizBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Quiz Ekle</button>';
+  document.getElementById('toRoster4').onclick = ()=>{ state.view='roster'; render(); };
+  document.getElementById('addQuizBtn').onclick = addQuiz;
+  $app.querySelectorAll('input[data-slot]').forEach(inp=>{
+    inp.onblur = ()=> renameQuiz(parseInt(inp.dataset.slot), inp.value);
+  });
+  $app.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
+  });
+}
+
 function renderRubric(){
   removeFab();
   const level = state.rubricLevel;
@@ -691,9 +832,14 @@ function renderRubric(){
   const topControls =
     '<a class="backlink" id="toRoster3">&lsaquo; '+state.cls+' listesine don</a>' +
     '<div class="levelpicker">' +
-      LEVELS.map(l=>'<button class="'+(l===level?'active':'')+'" data-lvl="'+l+'">'+l+'</button>').join('') +
+      state.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
       '<button id="editToggle" style="background:'+(state.rubricEdit?'var(--accent)':'var(--navy-soft)')+'; color:'+(state.rubricEdit?'#fff':'var(--navy)')+';">'+(state.rubricEdit?'Bitti':'Olcutleri Duzenle')+'</button>' +
-    '</div>';
+    '</div>' +
+    (state.rubricEdit && level ?
+      '<div style="display:flex; gap:8px; margin-bottom:16px;">' +
+        '<button id="renamePerfBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Yeniden Adlandir</button>' +
+        '<button id="deletePerfBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Sil</button>' +
+      '</div>' : '');
 
   if(state.rubricEdit){
     const critEdit = crit.map((c,ci)=>{
@@ -771,6 +917,17 @@ function renderRubric(){
   }
 
   document.getElementById('toRoster3').onclick = ()=>{ state.view='roster'; render(); };
+  const renamePerfBtn = document.getElementById('renamePerfBtn');
+  if(renamePerfBtn) renamePerfBtn.onclick = ()=>{
+    const nn = prompt('Yeni ad:', level);
+    if(nn && nn.trim() && nn.trim()!==level) renamePerfTask(level, nn.trim());
+  };
+  const deletePerfBtn = document.getElementById('deletePerfBtn');
+  if(deletePerfBtn) deletePerfBtn.onclick = ()=>{
+    if(confirm('"'+level+'" silinsin mi? Bu gorevin tum olcutleri ve ogrenci puanlari da silinir.')){
+      deletePerfTask(level);
+    }
+  };
   $app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
   });
