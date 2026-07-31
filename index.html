@@ -74,7 +74,7 @@
 
   .hwrow{display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--line);}
   .hwrow:last-child{border-bottom:none;}
-  .hwrow .topic{flex:1;}
+  .hwrow .topic{flex:1; cursor:pointer;}
   .hwrow .topic .t{font-size:14.5px; font-weight:600;}
   .hwrow .topic .d{font-size:12px; color:var(--ink-soft);}
   .hwrow.future .topic .t, .hwrow.future .topic .d{color:var(--ink-soft); font-style:italic;}
@@ -147,7 +147,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iOiJhdXRoIiwiY2hhdCI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let state = {
@@ -160,6 +160,7 @@ let state = {
   rubricScores: {},
   view: 'roster',
   currentStudentId: null,
+  activeHwSlot: null, // Hızlı ödev kontrolü için seçilen ödev slotu
   rubricLevel: 'P1',
   rubricEdit: false,
   sortBy: 'no',
@@ -550,7 +551,7 @@ function exportCSV() {
     return;
   }
   let csv = '\uFEFF'; 
-  let headers = ['No', 'Ad Soyad'];
+  let headers = ['No', 'Ad Soyad', 'Durum'];
   state.quizzes.forEach(q => headers.push(q.label));
   state.perfTasks.forEach(t => headers.push(t.label));
   headers.push('Odev Durumu (%)');
@@ -569,6 +570,7 @@ function exportCSV() {
     let row = [];
     row.push(s.no || '');
     row.push(s.name || '');
+    row.push(s.absent ? 'Okulda Yok' : 'Aktif');
     state.quizzes.forEach(q => {
       let val = (state.quizScores[s.id]||{})[q.slot_no] || '';
       row.push(val);
@@ -614,6 +616,7 @@ function render(){
   if(state.view==='roster') renderRoster();
   else if(state.view==='student') renderStudent();
   else if(state.view==='homeworks') renderHomeworks();
+  else if(state.view==='quick_hw') renderQuickHw();
   else if(state.view==='quizzes') renderQuizzes();
   else if(state.view==='rubric') renderRubric();
 }
@@ -652,6 +655,11 @@ function renderTopbar(){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Odev Tanimlama';
     $topSub.textContent = state.cls;
+  } else if(state.view==='quick_hw'){
+    $backBtn.style.visibility='visible';
+    const hw = state.homeworks.find(h=>h.slot_no===state.activeHwSlot);
+    $topTitle.textContent = 'Hızlı Ödev Kontrolü';
+    $topSub.textContent = hw ? (hw.topic || ('Ödev #' + hw.slot_no)) : state.cls;
   } else if(state.view==='quizzes'){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Quiz Yonetimi';
@@ -662,7 +670,11 @@ function renderTopbar(){
     $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
   }
 }
-$backBtn.onclick = ()=>{ state.view='roster'; render(); };
+$backBtn.onclick = ()=>{ 
+  if(state.view==='quick_hw') state.view='homeworks';
+  else state.view='roster'; 
+  render(); 
+};
 
 function renderRoster(){
   const a = assignedCount();
@@ -735,9 +747,10 @@ function renderRoster(){
     });
     list.innerHTML = sorted.map(s=>{
       const p = pct(s.id);
+      const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:8px;">Okulda Yok</span>' : '';
       return '<div class="card studentcard" data-id="'+s.id+'">' +
         '<div class="no">'+(s.no||'')+'</div>' +
-        '<div class="name">'+escapeHtml(s.name)+'</div>' +
+        '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
         '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
         '<div class="chev">&rsaquo;</div>' +
       '</div>';
@@ -810,6 +823,10 @@ function renderStudent(){
     '<div class="detail-grid">' +
       '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
     '</div>' +
+    '<div class="card" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">' +
+      '<div><b>Okulda Yok / Gelmedi</b><div style="font-size:12px; color:var(--ink-soft)">Bugün okulda değilse işaretleyin</div></div>' +
+      '<button class="toggle '+(s.absent?'on':'')+'" id="absentToggle"><span class="knob"></span></button>' +
+    '</div>' +
     (state.quizzes.length ?
       '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
       '<div class="detail-grid">'+quizHtml+'</div>'
@@ -828,6 +845,12 @@ function renderStudent(){
       '<button id="deleteBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ogrenciyi Sil</button>' +
     '</div>';
 
+  document.getElementById('absentToggle').onclick = async ()=>{
+    s.absent = !s.absent;
+    render();
+    await sb.from('students').update({absent: s.absent}).eq('id', s.id);
+    showToast(s.absent ? 'Öğrenci okulda yok olarak işaretlendi' : 'Öğrenci aktif');
+  };
   document.getElementById('renameBtn').onclick = ()=>{
     const newName = prompt('Yeni ad soyad:', s.name);
     if(newName && newName.trim() && newName.trim()!==s.name) renameStudent(s.id, newName.trim());
@@ -846,7 +869,7 @@ function renderStudent(){
     inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
   });
   $app.querySelectorAll('.toggle').forEach(btn=>{
-    if(btn.disabled) return;
+    if(btn.id==='absentToggle' || btn.disabled) return;
     btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
   });
   const noteBox = document.getElementById('noteBox');
@@ -858,8 +881,9 @@ function renderHomeworks(){
   const rows = state.homeworks.map(h=>
     '<div class="rowline">' +
       '<div class="slot">#'+h.slot_no+'</div>' +
-      '<input type="text" placeholder="Konu" value="'+(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
+      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
       '<input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date">' +
+      '<button data-check="'+h.slot_no+'" style="border:1px solid var(--navy); background:var(--navy-soft); color:var(--navy); padding:6px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Kontrol Et</button>' +
       '<button data-del="'+h.slot_no+'" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
     '</div>'
   ).join('');
@@ -867,17 +891,68 @@ function renderHomeworks(){
     '<a class="backlink" id="toRoster2">&lsaquo; '+state.cls+' listesine don</a>' +
     '<div class="card">'+(rows||'<div class="empty">Henuz odev yok.</div>')+'</div>' +
     '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Odev Ekle</button>' +
-    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">Tarihi bugunden ileri olan odevler, tamamlanma yuzdesine henuz dahil edilmez.</p>';
+    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">Ödevlerin yanındaki **Kontrol Et** butonuna basarak doğrudan sınıf listesinden hızlıca ödev işaretlemesi yapabilirsiniz.</p>';
   document.getElementById('toRoster2').onclick = ()=>{ state.view='roster'; render(); };
   document.getElementById('addHwBtn').onclick = addHomework;
   $app.querySelectorAll('input[data-f]').forEach(inp=>{
     inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value || null);
+  });
+  $app.querySelectorAll('button[data-check]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.activeHwSlot = parseInt(btn.dataset.check);
+      state.view = 'quick_hw';
+      render();
+    };
   });
   $app.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = ()=>{
       if(confirm('Bu odev silinsin mi? Ogrencilerin bu odeve ait isaretleri de silinir.')){
         deleteHomework(parseInt(btn.dataset.del));
       }
+    };
+  });
+}
+
+// HIZLI ÖDEV KONTROL EKRANI (Ödev adına basınca açılan liste)
+function renderQuickHw(){
+  removeFab();
+  const slotNo = state.activeHwSlot;
+  const hw = state.homeworks.find(h=>h.slot_no===slotNo);
+  if(!hw){ state.view='homeworks'; return render(); }
+
+  const sorted = [...state.students].sort((a,b)=>{
+    const na = parseInt(a.no), nb = parseInt(b.no);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va!==vb) return va-vb;
+    return a.name.localeCompare(b.name,'tr');
+  });
+
+  const listHtml = sorted.map(s=>{
+    const done = !!(state.hwStatus[s.id]||{})[slotNo];
+    const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:8px;">Okulda Yok</span>' : '';
+    return '<div class="card studentcard" style="cursor:default;">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
+      '<button class="toggle '+(done?'on':'')+'" data-quick-slot="'+slotNo+'" data-quick-id="'+s.id+'"><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
+
+  $app.innerHTML =
+    '<a class="backlink" id="toHwList">&lsaquo; Ödev listesine dön</a>' +
+    '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:16px;">' +
+      '<div><b>'+escapeHtml(hw.topic || ('Ödev #' + hw.slot_no))+'</b><div style="font-size:12px; opacity:0.8;">Tarih: '+(hw.hw_date ? fmtDate(hw.hw_date) : 'Belirtilmemiş')+'</div></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Ödev Yapanlar (Tıklayıp İşaretleyin)</span><span class="line"></span></div>' +
+    (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>');
+
+  document.getElementById('toHwList').onclick = ()=>{ state.view='homeworks'; render(); };
+  $app.querySelectorAll('[data-quick-slot]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const sid = btn.dataset.quickId;
+      const sslot = parseInt(btn.dataset.quickSlot);
+      await toggleHw(sid, sslot);
+      renderQuickHw(); // Ekranı tazele
     };
   });
 }
