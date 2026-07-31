@@ -164,6 +164,7 @@ let state = {
   currentStudentId: null,
   rubricLevel: 'P1',
   rubricEdit: false,
+  sortBy: 'no',
   loading: true,
 };
 
@@ -421,6 +422,34 @@ async function deleteStudent(studentId){
   showToast('Ogrenci silindi');
 }
 
+async function exportBackup(){
+  showToast('Yedek hazirlaniyor...');
+  const [c,s,h,hs,r,rs] = await Promise.all([
+    sb.from('classes').select('*'),
+    sb.from('students').select('*'),
+    sb.from('homeworks').select('*'),
+    sb.from('homework_status').select('*'),
+    sb.from('rubrics').select('*'),
+    sb.from('rubric_scores').select('*'),
+  ]);
+  const backup = {
+    exported_at: new Date().toISOString(),
+    classes: c.data||[], students: s.data||[], homeworks: h.data||[],
+    homework_status: hs.data||[], rubrics: r.data||[], rubric_scores: rs.data||[],
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = 'takip-yedek-'+stamp+'.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  showToast('Yedek indirildi');
+}
+
 function render(){
   renderClassbar();
   renderTopbar();
@@ -487,7 +516,12 @@ function renderRoster(){
       '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
       '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
     '</div>' +
+    '<div style="text-align:right; margin:-6px 0 14px;"><a class="linklike" id="backupLink" style="font-size:12.5px;">&#128190; Tum verileri yedekle (JSON indir)</a></div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
+    '<div style="display:flex; gap:8px; margin-bottom:10px;">' +
+      '<button id="sortNo" style="flex:1; border:none; padding:9px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
+      '<button id="sortName" style="flex:1; border:none; padding:9px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='name'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='name'?'#fff':'var(--navy)')+';">Isme gore</button>' +
+    '</div>' +
     '<div id="rosterList"></div>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -499,6 +533,7 @@ function renderRoster(){
       '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
     '</div>';
   document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('backupLink').onclick = exportBackup;
   document.getElementById('renameClsBtn').onclick = ()=>{
     const nn = prompt('Yeni sinif adi:', state.cls);
     if(nn && nn.trim() && nn.trim()!==state.cls) renameClass(state.cls, nn.trim());
@@ -512,11 +547,24 @@ function renderRoster(){
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; state.view='rubric'; state.currentStudentId = state.students[0] ? state.students[0].id : null; render(); };
   });
 
+  document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
+  document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
+
   const list = document.getElementById('rosterList');
   if(!state.students.length){
     list.innerHTML = '<div class="empty"><div class="big">&#128118;</div>Henuz ogrenci yok.<br>Sag alttaki + ile ekleyebilirsin.</div>';
   } else {
-    list.innerHTML = state.students.map(s=>{
+    const sorted = [...state.students].sort((a,b)=>{
+      if(state.sortBy==='name'){
+        return a.name.localeCompare(b.name,'tr');
+      }
+      const na = parseInt(a.no), nb = parseInt(b.no);
+      const va = isNaN(na) ? Infinity : na;
+      const vb = isNaN(nb) ? Infinity : nb;
+      if(va!==vb) return va-vb;
+      return a.name.localeCompare(b.name,'tr');
+    });
+    list.innerHTML = sorted.map(s=>{
       const p = pct(s.id);
       return '<div class="card studentcard" data-id="'+s.id+'">' +
         '<div class="no">'+(s.no||'')+'</div>' +
@@ -557,6 +605,10 @@ function renderStudent(){
 
   $app.innerHTML =
     '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="sectiontitle"><span>Ogrenci Bilgisi</span><span class="line"></span></div>' +
+    '<div class="detail-grid">' +
+      '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
+    '</div>' +
     '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
     '<div class="detail-grid">' +
       '<div class="field"><label>Q1</label><input type="text" data-f="q1" value="'+(s.q1||'')+'"></div>' +
