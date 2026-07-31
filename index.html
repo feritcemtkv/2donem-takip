@@ -124,8 +124,8 @@
   .spin{width:28px; height:28px; border:3px solid var(--navy-soft); border-top-color:var(--navy); border-radius:50%; margin:0 auto 12px; animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  a.linklike{color:var(--navy); font-weight:600; text-decoration:none;}
-  .backlink{display:block; margin-bottom:14px; color:var(--navy); font-weight:600; text-decoration:none; font-size:14.5px;}
+  a.linklike{color:var(--navy); font-weight:600; text-decoration:none; cursor:pointer;}
+  .backlink{display:block; margin-bottom:14px; color:var(--navy); font-weight:600; text-decoration:none; font-size:14.5px; cursor:pointer;}
 </style>
 </head>
 <body>
@@ -149,7 +149,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 
 let state = {
   classes: [],
@@ -545,6 +544,62 @@ async function exportBackup(){
   showToast('Yedek indirildi');
 }
 
+function exportCSV() {
+  if(!state.cls || !state.students.length) {
+    showToast('Disa aktarilacak ogrenci yok');
+    return;
+  }
+  let csv = '\uFEFF'; 
+  let headers = ['No', 'Ad Soyad'];
+  state.quizzes.forEach(q => headers.push(q.label));
+  state.perfTasks.forEach(t => headers.push(t.label));
+  headers.push('Odev Durumu (%)');
+  headers.push('Ogretmen Notu');
+  csv += headers.join(';') + '\n';
+  
+  const sorted = [...state.students].sort((a,b)=>{
+    const na = parseInt(a.no), nb = parseInt(b.no);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va!==vb) return va-vb;
+    return a.name.localeCompare(b.name,'tr');
+  });
+  
+  sorted.forEach(s => {
+    let row = [];
+    row.push(s.no || '');
+    row.push(s.name || '');
+    state.quizzes.forEach(q => {
+      let val = (state.quizScores[s.id]||{})[q.slot_no] || '';
+      row.push(val);
+    });
+    state.perfTasks.forEach(t => {
+      let total = rubricTotal(s.id, t.label);
+      row.push(total.grade != null ? total.grade : '');
+    });
+    row.push(pct(s.id));
+    let note = s.teacher_note || '';
+    note = note.replace(/"/g, '""');
+    if(note.includes(';') || note.includes('\n') || note.includes('"')) {
+      note = '"' + note + '"';
+    }
+    row.push(note);
+    csv += row.join(';') + '\n';
+  });
+  
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = state.cls + '_Notlar_' + stamp + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  showToast('Excel (CSV) indirildi');
+}
+
 function render(){
   renderClassbar();
   renderTopbar();
@@ -618,7 +673,10 @@ function renderRoster(){
     '</div>' +
     '<div style="display:flex; justify-content:space-between; margin:-6px 0 14px; font-size:12.5px;">' +
       '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
-      '<a class="linklike" id="backupLink">&#128190; Tum verileri yedekle</a>' +
+      '<div style="display:flex; gap:12px;">' +
+        '<a class="linklike" id="excelLink">&#128202; Excel Indir</a>' +
+        '<a class="linklike" id="backupLink">&#128190; Yedekle</a>' +
+      '</div>' +
     '</div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
     '<div style="display:flex; gap:8px; margin-bottom:10px;">' +
@@ -640,6 +698,7 @@ function renderRoster(){
   document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
   document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
   document.getElementById('backupLink').onclick = exportBackup;
+  document.getElementById('excelLink').onclick = exportCSV;
   document.getElementById('addPerfBtn2').onclick = ()=>{
     const label = prompt('Yeni performans gorevinin adi (orn. Performans 4):');
     if(label && label.trim()) addPerfTask(label.trim());
@@ -698,6 +757,23 @@ function renderStudent(){
   const s = studentById(state.currentStudentId);
   if(!s){ state.view='roster'; return render(); }
   const today = todayStr();
+  
+  let quizSum = 0, quizCount = 0;
+  state.quizzes.forEach(q => {
+    const val = parseFloat((state.quizScores[s.id] || {})[q.slot_no]);
+    if(!isNaN(val)) { quizSum += val; quizCount++; }
+  });
+  const quizAvg = quizCount > 0 ? Math.round(quizSum / quizCount) : '-';
+
+  let perfSum = 0, perfCount = 0;
+  state.perfTasks.forEach(t => {
+    const total = rubricTotal(s.id, t.label);
+    if(total.grade != null) { perfSum += total.grade; perfCount++; }
+  });
+  const perfAvg = perfCount > 0 ? Math.round(perfSum / perfCount) : '-';
+  
+  const hwPct = pct(s.id);
+
   const hwRows = state.homeworks.map(h=>{
     const future = !h.hw_date || h.hw_date > today;
     const done = !!(state.hwStatus[s.id]||{})[h.slot_no];
@@ -723,6 +799,13 @@ function renderStudent(){
 
   $app.innerHTML =
     '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Quiz Ort.</div><b class="num" style="font-size:18px;">'+quizAvg+'</b></div>' +
+      '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Perf. Ort.</div><b class="num" style="font-size:18px;">'+perfAvg+'</b></div>' +
+      '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Ödev Durumu</div><b class="num" style="font-size:18px;">%'+hwPct+'</b></div>' +
+    '</div>' +
     '<div class="sectiontitle"><span>Ogrenci Bilgisi</span><span class="line"></span></div>' +
     '<div class="detail-grid">' +
       '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
@@ -900,7 +983,7 @@ function renderRubric(){
         '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
           '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
           '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
-        '</div>'
+      '</div>'
       ).join('');
       return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
     }).join('');
