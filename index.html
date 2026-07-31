@@ -150,11 +150,11 @@ const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const CLASSES = ['10E','9FL','9B'];
-const N_HW = 13;
+const LEVELS = ['P1','P2','P3'];
 
 let state = {
-  cls: CLASSES[0],
+  classes: [],
+  cls: null,
   students: [],
   homeworks: [],
   hwStatus: {},
@@ -163,6 +163,7 @@ let state = {
   view: 'roster',
   currentStudentId: null,
   rubricLevel: 'P1',
+  rubricEdit: false,
   loading: true,
 };
 
@@ -188,6 +189,52 @@ function fmtDate(d){
 function todayStr(){
   const t = new Date();
   return t.toISOString().slice(0,10);
+}
+
+async function loadClasses(){
+  const { data } = await sb.from('classes').select('*').order('sort_order');
+  state.classes = data || [];
+  return state.classes;
+}
+async function addClass(name){
+  name = name.trim();
+  if(!name) return;
+  if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    showToast('Bu sinif zaten var'); return;
+  }
+  const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+  const { data } = await sb.from('classes').insert({name, sort_order:maxOrder+1}).select();
+  if(data && data[0]) state.classes.push(data[0]);
+  await loadClass(name);
+}
+async function renameClass(oldName, newName){
+  newName = newName.trim();
+  if(!newName || newName===oldName) return;
+  const c = state.classes.find(x=>x.name===oldName);
+  if(c) c.name = newName;
+  await sb.from('classes').update({name:newName}).eq('name', oldName);
+  await sb.from('students').update({class_name:newName}).eq('class_name', oldName);
+  await sb.from('homeworks').update({class_name:newName}).eq('class_name', oldName);
+  await sb.from('rubrics').update({class_name:newName}).eq('class_name', oldName);
+  await loadClass(newName);
+  showToast('Sinif adi guncellendi');
+}
+async function deleteClass(name){
+  state.classes = state.classes.filter(c=>c.name!==name);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', name);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('homework_status').delete().in('student_id', ids);
+    await sb.from('rubric_scores').delete().in('student_id', ids);
+    await sb.from('students').delete().eq('class_name', name);
+  }
+  await sb.from('homeworks').delete().eq('class_name', name);
+  await sb.from('rubrics').delete().eq('class_name', name);
+  await sb.from('classes').delete().eq('name', name);
+  showToast('Sinif silindi');
+  const next = state.classes[0];
+  if(next) await loadClass(next.name);
+  else { state.cls=null; state.students=[]; state.homeworks=[]; state.loading=false; render(); }
 }
 
 async function loadClass(cls){
@@ -275,6 +322,49 @@ async function updateStudentField(studentId, field, value){
   await sb.from('students').update({[field]: value}).eq('id', studentId);
   showToast('Kaydedildi');
 }
+async function saveRubric(level){
+  const criteria = state.rubrics[level] || [];
+  await sb.from('rubrics').upsert({class_name: state.cls, level, criteria}, {onConflict:'class_name,level'});
+}
+function addCriterion(level){
+  state.rubrics[level] = state.rubrics[level] || [];
+  state.rubrics[level].push({name:'Yeni Olcut', max:4, levels:[
+    {score:4, label:'Mukemmel', desc:''},
+    {score:3, label:'Iyi', desc:''},
+    {score:2, label:'Orta', desc:''},
+    {score:1, label:'Gelistirilmesi Gerekir', desc:''},
+  ]});
+  saveRubric(level);
+  render();
+}
+function deleteCriterion(level, ci){
+  if(!confirm('Bu olcut silinsin mi?')) return;
+  state.rubrics[level].splice(ci,1);
+  saveRubric(level);
+  render();
+}
+function updateCriterion(level, ci, field, value){
+  state.rubrics[level][ci][field] = field==='max' ? (parseInt(value)||1) : value;
+  saveRubric(level);
+}
+function addLevel(level, ci){
+  const c = state.rubrics[level][ci];
+  c.levels = c.levels || [];
+  c.levels.push({score:1, label:'Yeni Seviye', desc:''});
+  saveRubric(level);
+  render();
+}
+function deleteLevel(level, ci, li){
+  state.rubrics[level][ci].levels.splice(li,1);
+  saveRubric(level);
+  render();
+}
+function updateLevel(level, ci, li, field, value){
+  const lv = state.rubrics[level][ci].levels[li];
+  lv[field] = field==='score' ? (parseInt(value)||0) : value;
+  saveRubric(level);
+}
+
 async function setRubricScore(studentId, level, critIndex, score){
   state.rubricScores[studentId] = state.rubricScores[studentId] || {};
   state.rubricScores[studentId][level] = state.rubricScores[studentId][level] || {};
@@ -288,12 +378,47 @@ async function updateHomework(slotNo, field, value){
   if(hw) hw[field] = value;
   await sb.from('homeworks').update({[field]: value}).eq('class_name', state.cls).eq('slot_no', slotNo);
 }
+async function addHomework(){
+  const maxSlot = Math.max(0, ...state.homeworks.map(h=>h.slot_no||0));
+  const nextSlot = maxSlot+1;
+  const { data } = await sb.from('homeworks').insert({class_name:state.cls, slot_no:nextSlot, topic:'', hw_date:null}).select();
+  if(data && data[0]) state.homeworks.push(data[0]);
+  render();
+  showToast('Odev eklendi');
+}
+async function deleteHomework(slotNo){
+  state.homeworks = state.homeworks.filter(h=>h.slot_no!==slotNo);
+  render();
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
+  }
+  await sb.from('homeworks').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  showToast('Odev silindi');
+}
 async function addStudent(name){
   const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
   const { data } = await sb.from('students').insert({class_name:state.cls, name, sort_order:maxOrder+1}).select();
   if(data && data[0]) state.students.push(data[0]);
   render();
   showToast('Ogrenci eklendi');
+}
+async function renameStudent(studentId, newName){
+  const s = studentById(studentId);
+  if(s) s.name = newName;
+  render();
+  await sb.from('students').update({name:newName}).eq('id', studentId);
+  showToast('Isim guncellendi');
+}
+async function deleteStudent(studentId){
+  state.students = state.students.filter(s=>s.id!==studentId);
+  delete state.hwStatus[studentId];
+  delete state.rubricScores[studentId];
+  state.view = 'roster';
+  render();
+  await sb.from('students').delete().eq('id', studentId);
+  showToast('Ogrenci silindi');
 }
 
 function render(){
@@ -303,6 +428,10 @@ function render(){
     $app.innerHTML = '<div class="loading"><div class="spin"></div>Yukleniyor...</div>';
     return;
   }
+  if(!state.cls){
+    $app.innerHTML = '<div class="empty"><div class="big">&#127891;</div>Henuz sinif yok.<br>Ustteki "+ Sinif" ile ilk sinifini ekle.</div>';
+    return;
+  }
   if(state.view==='roster') renderRoster();
   else if(state.view==='student') renderStudent();
   else if(state.view==='homeworks') renderHomeworks();
@@ -310,15 +439,26 @@ function render(){
 }
 
 function renderClassbar(){
-  $classbar.innerHTML = CLASSES.map(c=>
-    '<button class="'+(c===state.cls&&state.view==='roster'?'active':'')+'" data-cls="'+c+'">'+c+'</button>'
-  ).join('');
-  $classbar.querySelectorAll('button').forEach(b=>{
+  $classbar.innerHTML = state.classes.map(c=>
+    '<button class="'+(c.name===state.cls&&state.view==='roster'?'active':'')+'" data-cls="'+c.name+'">'+c.name+'</button>'
+  ).join('') + '<button data-add="1" style="background:rgba(255,255,255,.3)">+ Sinif</button>';
+  $classbar.querySelectorAll('button[data-cls]').forEach(b=>{
     b.onclick = ()=>{ state.view='roster'; loadClass(b.dataset.cls); };
   });
+  const addBtn = $classbar.querySelector('button[data-add]');
+  if(addBtn) addBtn.onclick = ()=>{
+    const name = prompt('Yeni sinif adi (orn. 11A):');
+    if(name && name.trim()) addClass(name.trim());
+  };
 }
 
 function renderTopbar(){
+  if(!state.cls){
+    $backBtn.style.visibility='hidden';
+    $topTitle.textContent = '2. Donem Takip';
+    $topSub.textContent = '';
+    return;
+  }
   if(state.view==='roster'){
     $backBtn.style.visibility='hidden';
     $topTitle.textContent = state.cls + ' Subesi';
@@ -344,16 +484,30 @@ function renderRoster(){
   const a = assignedCount();
   $app.innerHTML =
     '<div class="infobar">' +
-      '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+N_HW+'</div>' +
+      '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
       '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
     '</div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
     '<div id="rosterList"></div>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
-      ['P1','P2','P3'].map(l=>'<button class="levelpicker-btn" data-lvl="'+l+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+l+'</button>').join('') +
+      LEVELS.map(l=>'<button class="levelpicker-btn" data-lvl="'+l+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+l+'</button>').join('') +
+    '</div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
+      '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
     '</div>';
   document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('renameClsBtn').onclick = ()=>{
+    const nn = prompt('Yeni sinif adi:', state.cls);
+    if(nn && nn.trim() && nn.trim()!==state.cls) renameClass(state.cls, nn.trim());
+  };
+  document.getElementById('deleteClsBtn').onclick = ()=>{
+    if(confirm(state.cls+' sinifi ve tum ogrenci/odev/rubrik verileri kalici olarak silinsin mi?')){
+      deleteClass(state.cls);
+    }
+  };
   $app.querySelectorAll('.levelpicker-btn').forEach(b=>{
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; state.view='rubric'; state.currentStudentId = state.students[0] ? state.students[0].id : null; render(); };
   });
@@ -418,8 +572,22 @@ function renderStudent(){
     '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
     '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
-    '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>';
+    '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Ogrenci Islemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="renameBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ismi Duzenle</button>' +
+      '<button id="deleteBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ogrenciyi Sil</button>' +
+    '</div>';
 
+  document.getElementById('renameBtn').onclick = ()=>{
+    const newName = prompt('Yeni ad soyad:', s.name);
+    if(newName && newName.trim() && newName.trim()!==s.name) renameStudent(s.id, newName.trim());
+  };
+  document.getElementById('deleteBtn').onclick = ()=>{
+    if(confirm(s.name+' silinsin mi? Bu islem geri alinamaz, tum odev ve rubrik verileri de silinir.')){
+      deleteStudent(s.id);
+    }
+  };
   document.getElementById('toRoster').onclick = ()=>{ state.view='roster'; render(); };
   $app.querySelectorAll('.field input').forEach(inp=>{
     inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
@@ -439,66 +607,122 @@ function renderHomeworks(){
       '<div class="slot">#'+h.slot_no+'</div>' +
       '<input type="text" placeholder="Konu" value="'+(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
       '<input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date">' +
+      '<button data-del="'+h.slot_no+'" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
     '</div>'
   ).join('');
   $app.innerHTML =
     '<a class="backlink" id="toRoster2">&lsaquo; '+state.cls+' listesine don</a>' +
-    '<div class="card">'+rows+'</div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henuz odev yok.</div>')+'</div>' +
+    '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Odev Ekle</button>' +
     '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">Tarihi bugunden ileri olan odevler, tamamlanma yuzdesine henuz dahil edilmez.</p>';
   document.getElementById('toRoster2').onclick = ()=>{ state.view='roster'; render(); };
+  document.getElementById('addHwBtn').onclick = addHomework;
   $app.querySelectorAll('input[data-f]').forEach(inp=>{
     inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value || null);
+  });
+  $app.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(confirm('Bu odev silinsin mi? Ogrencilerin bu odeve ait isaretleri de silinir.')){
+        deleteHomework(parseInt(btn.dataset.del));
+      }
+    };
   });
 }
 
 function renderRubric(){
   removeFab();
-  const crit = state.rubrics[state.rubricLevel] || [];
+  const level = state.rubricLevel;
+  const crit = state.rubrics[level] || [];
   const sid = state.currentStudentId;
-  const totals = sid ? rubricTotal(sid, state.rubricLevel) : {sum:0,max:0,grade:null};
+  const totals = sid ? rubricTotal(sid, level) : {sum:0,max:0,grade:null};
 
-  const studentButtons = state.students.map(s=>
-    '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
-  ).join('');
-
-  const critHtml = crit.map((c,ci)=>{
-    const curScore = sid ? ((state.rubricScores[sid]||{})[state.rubricLevel]||{})[ci] : null;
-    const levels = (c.levels||[]).map(lv=>
-      '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
-        '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
-        '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
-      '</div>'
-    ).join('');
-    return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
-  }).join('');
-
-  $app.innerHTML =
+  const topControls =
     '<a class="backlink" id="toRoster3">&lsaquo; '+state.cls+' listesine don</a>' +
     '<div class="levelpicker">' +
-      ['P1','P2','P3'].map(l=>'<button class="'+(l===state.rubricLevel?'active':'')+'" data-lvl="'+l+'">'+l+'</button>').join('') +
-    '</div>' +
-    '<div class="studentpicker">'+studentButtons+'</div>' +
-    (sid ?
-      '<div class="rubricsummary">' +
-        '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
-        '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
-      '</div>' + critHtml
-      : '<div class="empty">Once bir ogrenci secin.</div>');
+      LEVELS.map(l=>'<button class="'+(l===level?'active':'')+'" data-lvl="'+l+'">'+l+'</button>').join('') +
+      '<button id="editToggle" style="background:'+(state.rubricEdit?'var(--accent)':'var(--navy-soft)')+'; color:'+(state.rubricEdit?'#fff':'var(--navy)')+';">'+(state.rubricEdit?'Bitti':'Olcutleri Duzenle')+'</button>' +
+    '</div>';
+
+  if(state.rubricEdit){
+    const critEdit = crit.map((c,ci)=>{
+      const levels = (c.levels||[]).map((lv,li)=>
+        '<div class="levelcard" style="cursor:default;">' +
+          '<div style="display:flex; gap:8px; margin-bottom:6px;">' +
+            '<input type="number" value="'+lv.score+'" data-ci="'+ci+'" data-li="'+li+'" data-f="score" style="width:56px; border:1px solid var(--line); border-radius:6px; padding:6px; font-weight:700;">' +
+            '<input type="text" value="'+escapeHtml(lv.label)+'" data-ci="'+ci+'" data-li="'+li+'" data-f="label" placeholder="Seviye adi" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:6px;">' +
+            '<button data-dellvl="'+ci+':'+li+'" style="border:none;background:none;color:#b3432f;font-size:18px;">&times;</button>' +
+          '</div>' +
+          '<textarea data-ci="'+ci+'" data-li="'+li+'" data-f="desc" placeholder="Aciklama" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px;font-family:inherit;font-size:12.5px;min-height:40px;">'+escapeHtml(lv.desc||'')+'</textarea>' +
+        '</div>'
+      ).join('');
+      return '<div class="critblock">' +
+        '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">' +
+          '<input type="text" value="'+escapeHtml(c.name)+'" data-crit="'+ci+'" data-f="name" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:8px; font-weight:700;">' +
+          'Tam puan: <input type="number" value="'+c.max+'" data-crit="'+ci+'" data-f="max" style="width:50px; border:1px solid var(--line); border-radius:6px; padding:8px;">' +
+          '<button data-delcrit="'+ci+'" style="border:none;background:#fdecea;color:#b3432f;border-radius:6px;padding:6px 10px;font-weight:700;">Sil</button>' +
+        '</div>' +
+        levels +
+        '<button data-addlvl="'+ci+'" style="width:100%; border:1px dashed var(--line); background:#fff; color:var(--ink-soft); padding:8px; border-radius:8px; font-size:12.5px; margin-top:4px;">+ Seviye Ekle</button>' +
+      '</div>';
+    }).join('');
+
+    $app.innerHTML = topControls + critEdit +
+      '<button id="addCritBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin:10px 0 20px;">+ Yeni Olcut Ekle</button>';
+
+    document.getElementById('addCritBtn').onclick = ()=> addCriterion(level);
+    $app.querySelectorAll('[data-delcrit]').forEach(b=> b.onclick = ()=> deleteCriterion(level, parseInt(b.dataset.delcrit)));
+    $app.querySelectorAll('[data-addlvl]').forEach(b=> b.onclick = ()=> addLevel(level, parseInt(b.dataset.addlvl)));
+    $app.querySelectorAll('[data-dellvl]').forEach(b=>{
+      b.onclick = ()=>{ const [ci,li]=b.dataset.dellvl.split(':').map(Number); deleteLevel(level,ci,li); };
+    });
+    $app.querySelectorAll('input[data-crit]').forEach(inp=>{
+      inp.onblur = ()=> updateCriterion(level, parseInt(inp.dataset.crit), inp.dataset.f, inp.value);
+    });
+    $app.querySelectorAll('[data-ci][data-li]').forEach(inp=>{
+      inp.onblur = ()=> updateLevel(level, parseInt(inp.dataset.ci), parseInt(inp.dataset.li), inp.dataset.f, inp.value);
+    });
+  } else {
+    const studentButtons = state.students.map(s=>
+      '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
+    ).join('');
+    const critHtml = crit.map((c,ci)=>{
+      const curScore = sid ? ((state.rubricScores[sid]||{})[level]||{})[ci] : null;
+      const levels = (c.levels||[]).map(lv=>
+        '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
+          '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
+          '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
+        '</div>'
+      ).join('');
+      return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
+    }).join('');
+
+    $app.innerHTML = topControls +
+      '<div class="studentpicker">'+studentButtons+'</div>' +
+      (crit.length===0 ? '<div class="empty">Bu performans icin henuz olcut tanimlanmadi.<br>Yukaridaki "Olcutleri Duzenle" ile ekleyebilirsin.</div>' :
+      sid ?
+        '<div class="rubricsummary">' +
+          '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
+          '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
+        '</div>' + critHtml
+        : '<div class="empty">Once bir ogrenci secin.</div>');
+
+    $app.querySelectorAll('.studentpicker button').forEach(b=>{
+      b.onclick = ()=>{ state.currentStudentId = b.dataset.id; render(); };
+    });
+    $app.querySelectorAll('.levelcard').forEach(el=>{
+      el.onclick = ()=>{
+        const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
+        const cur = ((state.rubricScores[sid]||{})[level]||{})[ci];
+        setRubricScore(sid, level, ci, cur===score ? null : score);
+      };
+    });
+  }
 
   document.getElementById('toRoster3').onclick = ()=>{ state.view='roster'; render(); };
-  $app.querySelectorAll('.levelpicker button').forEach(b=>{
+  $app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
   });
-  $app.querySelectorAll('.studentpicker button').forEach(b=>{
-    b.onclick = ()=>{ state.currentStudentId = b.dataset.id; render(); };
-  });
-  $app.querySelectorAll('.levelcard').forEach(el=>{
-    el.onclick = ()=>{
-      const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
-      const cur = ((state.rubricScores[sid]||{})[state.rubricLevel]||{})[ci];
-      setRubricScore(sid, state.rubricLevel, ci, cur===score ? null : score);
-    };
-  });
+  document.getElementById('editToggle').onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
 }
 
 let fabEl = null;
@@ -520,7 +744,15 @@ function escapeHtml(str){
   });
 }
 
-loadClass(state.cls);
+(async function init(){
+  await loadClasses();
+  if(state.classes.length){
+    await loadClass(state.classes[0].name);
+  } else {
+    state.loading = false;
+    render();
+  }
+})();
 </script>
 </body>
 </html>
