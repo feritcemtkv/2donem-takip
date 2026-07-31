@@ -880,6 +880,17 @@ function renderRubric(){
       inp.onblur = ()=> updateLevel(level, parseInt(inp.dataset.ci), parseInt(inp.dataset.li), inp.dataset.f, inp.value);
     });
   } else {
+    const summaryRows = state.students.map(s=>{
+      const t = rubricTotal(s.id, level);
+      const badge = t.grade!=null ? t.grade : '-';
+      const low = t.grade!=null && t.grade<60;
+      return '<div class="card studentcard" data-sumid="'+s.id+'" style="margin-bottom:6px;">' +
+        '<div class="name">'+escapeHtml(s.name)+'</div>' +
+        '<div class="pct '+(low?'low':'')+' num">'+badge+'</div>' +
+        '<div class="chev">&rsaquo;</div>' +
+      '</div>';
+    }).join('');
+
     const studentButtons = state.students.map(s=>
       '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
     ).join('');
@@ -895,14 +906,28 @@ function renderRubric(){
     }).join('');
 
     $app.innerHTML = topControls +
-      '<div class="studentpicker">'+studentButtons+'</div>' +
       (crit.length===0 ? '<div class="empty">Bu performans icin henuz olcut tanimlanmadi.<br>Yukaridaki "Olcutleri Duzenle" ile ekleyebilirsin.</div>' :
-      sid ?
+      '<div class="sectiontitle"><span>Sinif Ozeti</span><span class="line"></span></div>' +
+      '<div id="summaryList">'+(summaryRows || '<div class="empty">Ogrenci yok.</div>')+'</div>' +
+      '<div class="sectiontitle" style="margin-top:24px;"><span>'+(sid ? 'Puanlama' : 'Puanlamak icin ogrenci sec')+'</span><span class="line"></span></div>' +
+      '<div class="studentpicker">'+studentButtons+'</div>' +
+      (sid ?
         '<div class="rubricsummary">' +
           '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
           '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
         '</div>' + critHtml
-        : '<div class="empty">Once bir ogrenci secin.</div>');
+        : ''));
+
+    $app.querySelectorAll('[data-sumid]').forEach(el=>{
+      el.onclick = ()=>{
+        state.currentStudentId = el.dataset.sumid;
+        render();
+        const target = document.getElementById('summaryList');
+        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+        const picker = $app.querySelector('.studentpicker');
+        if(picker) picker.scrollIntoView({behavior:'smooth', block:'center'});
+      };
+    });
 
     $app.querySelectorAll('.studentpicker button').forEach(b=>{
       b.onclick = ()=>{ state.currentStudentId = b.dataset.id; render(); };
