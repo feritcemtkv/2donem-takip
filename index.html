@@ -764,17 +764,13 @@ function renderRoster(){
       '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
       '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
     '</div>' +
-    '<div style="display:flex; justify-content:space-between; margin:-6px 0 14px; font-size:12.5px;">' +
+    '<div style="margin:-6px 0 14px; font-size:12.5px;">' +
       '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
-      '<div style="display:flex; gap:12px;">' +
-        '<a class="linklike" id="excelLink">&#128202; Excel Indir</a>' +
-        '<a class="linklike" id="backupLink">&#128190; Yedekle</a>' +
-      '</div>' +
     '</div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
-    '<div style="display:flex; gap:8px; margin-bottom:10px;">' +
-      '<button id="sortNo" style="flex:1; border:none; padding:9px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
-      '<button id="sortName" style="flex:1; border:none; padding:9px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='name'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='name'?'#fff':'var(--navy)')+';">Isme gore</button>' +
+    '<div style="display:flex; gap:6px; margin-bottom:10px;">' +
+      '<button id="sortNo" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
+      '<button id="sortName" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='name'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='name'?'#fff':'var(--navy)')+';">Isme gore</button>' +
     '</div>' +
     '<div id="rosterList"></div>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
@@ -787,6 +783,11 @@ function renderRoster(){
     '<div class="card" style="display:flex; gap:10px;">' +
       '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
       '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
+    '</div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Veri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="excelLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128202; Excel Indir</button>' +
+      '<button id="backupLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128190; Yedekle</button>' +
     '</div>';
   document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
   document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
