@@ -155,6 +155,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -584,6 +585,60 @@ async function deleteHomework(slotNo){
   await sb.from('homeworks').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
   showToast('Odev silindi');
 }
+async function importStudentsFromExcel(file){
+  if(!file) return;
+  showToast('Dosya okunuyor...');
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(!rows.length){ showToast('Dosya bos gorunuyor'); return; }
+
+    // basliklari bul (No / Ad Soyad benzeri kelimeler)
+    let startRow = 0;
+    let noCol = 0, nameCol = 1, firstCol = -1, lastCol = -1;
+    const header = rows[0].map(c=>String(c).toLocaleLowerCase('tr'));
+    const looksLikeHeader = header.some(h=>h.includes('no')||h.includes('ad')||h.includes('isim')||h.includes('soyad'));
+    if(looksLikeHeader){
+      startRow = 1;
+      header.forEach((h,i)=>{
+        if(h.includes('no')) noCol = i;
+        else if(h.includes('ad') && h.includes('soyad')) nameCol = i;
+        else if(h.includes('ad') && firstCol===-1 && !h.includes('soyad')) firstCol = i;
+        else if(h.includes('soyad')) lastCol = i;
+      });
+    }
+
+    const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
+    const newRows = [];
+    let order = maxOrder;
+    for(let r=startRow; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>String(c).trim()==='')) continue;
+      const no = String(row[noCol]??'').trim();
+      let name;
+      if(firstCol>=0 && lastCol>=0){
+        name = (String(row[firstCol]??'').trim()+' '+String(row[lastCol]??'').trim()).trim();
+      } else {
+        name = String(row[nameCol]??'').trim();
+      }
+      if(!name) continue;
+      order++;
+      newRows.push({class_name: state.cls, no: no||null, name, sort_order: order});
+    }
+    if(!newRows.length){ showToast('Ogrenci satiri bulunamadi'); return; }
+
+    const { data, error } = await sb.from('students').insert(newRows).select();
+    if(error){ showToast('Hata: '+error.message); return; }
+    state.students = state.students.concat(data||[]);
+    render();
+    showToast(newRows.length+' ogrenci eklendi');
+  }catch(err){
+    showToast('Dosya okunamadi: '+err.message);
+  }
+}
+
 async function addStudent(name){
   const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
   const { data } = await sb.from('students').insert({class_name:state.cls, name, sort_order:maxOrder+1}).select();
@@ -707,6 +762,7 @@ function render(){
   if(state.view==='roster') renderRoster();
   else if(state.view==='student') renderStudent();
   else if(state.view==='homeworks') renderHomeworks();
+  else if(state.view==='hw_picker') renderHwPicker();
   else if(state.view==='quick_hw') renderQuickHw();
   else if(state.view==='quizzes') renderQuizzes();
   else if(state.view==='quick_quiz') renderQuickQuiz();
@@ -747,6 +803,10 @@ function renderTopbar(){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Odev Tanimlama';
     $topSub.textContent = state.cls;
+  } else if(state.view==='hw_picker'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Odevleri Kontrol Et';
+    $topSub.textContent = 'Kontrol etmek istedigin odevi sec';
   } else if(state.view==='quick_hw'){
     $backBtn.style.visibility='visible';
     const hw = state.homeworks.find(h=>h.slot_no===state.activeHwSlot);
@@ -763,12 +823,12 @@ function renderTopbar(){
     $topSub.textContent = q ? q.label : state.cls;
   } else if(state.view==='rubric'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = 'Performans Rubrigi';
+    $topTitle.textContent = 'Performans Odevi';
     $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
   }
 }
 $backBtn.onclick = ()=>{ 
-  if(state.view==='quick_hw') state.view='homeworks';
+  if(state.view==='quick_hw') state.view = state.hwCheckFrom || 'hw_picker';
   else if(state.view==='quick_quiz') state.view='quizzes';
   else state.view='roster'; 
   render(); 
@@ -779,7 +839,10 @@ function renderRoster(){
   $app.innerHTML =
     '<div class="infobar">' +
       '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
-      '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
+    '</div>' +
+    '<div style="display:flex; gap:8px; margin-bottom:14px;">' +
+      '<button id="hwEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Duzenle</button>' +
+      '<button id="hwCheckBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Kontrol Et</button>' +
     '</div>' +
     '<div style="margin:-6px 0 14px; font-size:12.5px;">' +
       '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
@@ -790,12 +853,14 @@ function renderRoster(){
       '<button id="sortName" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='name'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='name'?'#fff':'var(--navy)')+';">Isme gore</button>' +
     '</div>' +
     '<div id="rosterList"></div>' +
-    '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
+    '<button id="excelImportBtn" style="width:100%; border:1px dashed var(--navy); background:#fff; color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px; margin-top:10px;">&#128228; Excelden Ogrenci Listesi Yukle</button>' +
+    '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Performans Odevi</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
       state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
-      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans gorevi yok.</div>' : '') +
+      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans odevi yok.</div>' : '') +
     '</div>' +
-    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Gorevi Ekle</button>' +
+    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Odevi Ekle</button>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:10px;">' +
       '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
@@ -806,12 +871,15 @@ function renderRoster(){
       '<button id="excelLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128202; Excel Indir</button>' +
       '<button id="backupLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128190; Yedekle</button>' +
     '</div>';
-  document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
   document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
   document.getElementById('backupLink').onclick = exportBackup;
   document.getElementById('excelLink').onclick = exportCSV;
+  document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
+  document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
   document.getElementById('addPerfBtn2').onclick = ()=>{
-    const label = prompt('Yeni performans gorevinin adi (orn. Performans 4):');
+    const label = prompt('Yeni performans odevinin adi (orn. Performans 4):');
     if(label && label.trim()) addPerfTask(label.trim());
   };
   document.getElementById('renameClsBtn').onclick = ()=>{
@@ -862,6 +930,65 @@ function renderRoster(){
     const name = prompt('Yeni ogrencinin adi soyadi:');
     if(name && name.trim()) addStudent(name.trim());
   });
+}
+
+function lineChartSvg(points){
+  const valid = points.filter(p=>!isNaN(p.value));
+  if(valid.length < 2) return '';
+  const W = 320, H = 140, padL = 28, padR = 12, padT = 14, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const maxV = 100, minV = 0;
+  const stepX = points.length>1 ? innerW/(points.length-1) : 0;
+  const xy = points.map((p,i)=>{
+    const x = padL + i*stepX;
+    const v = isNaN(p.value) ? null : p.value;
+    const y = v==null ? null : padT + innerH - ((v-minV)/(maxV-minV))*innerH;
+    return {x,y,v,label:p.label};
+  });
+  let path = '';
+  xy.forEach((pt,i)=>{
+    if(pt.y==null) return;
+    path += (path===''?'M':'L') + pt.x.toFixed(1) + ' ' + pt.y.toFixed(1) + ' ';
+  });
+  const dots = xy.filter(pt=>pt.y!=null).map(pt=>
+    '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="3.5" fill="#1F4E78"/>' +
+    '<text x="'+pt.x.toFixed(1)+'" y="'+(pt.y-9).toFixed(1)+'" font-size="10" fill="#1F4E78" text-anchor="middle" font-weight="700">'+Math.round(pt.v)+'</text>'
+  ).join('');
+  const labels = xy.map(pt=>
+    '<text x="'+pt.x.toFixed(1)+'" y="'+(H-8)+'" font-size="9" fill="#6b6f76" text-anchor="middle">'+escapeHtml((pt.label||'').slice(0,8))+'</text>'
+  ).join('');
+  const gridlines = [0,25,50,75,100].map(v=>{
+    const y = padT + innerH - ((v-minV)/(maxV-minV))*innerH;
+    return '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="#e2e0d8" stroke-width="1"/>';
+  }).join('');
+  return '<div class="card" style="padding:12px 8px;"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%; height:auto; display:block;">' +
+    gridlines + '<path d="'+path+'" fill="none" stroke="#1F4E78" stroke-width="2"/>' + dots + labels +
+    '</svg></div>';
+}
+
+function barChartSvg(points){
+  const valid = points.filter(p=>p.value!=null);
+  if(!valid.length) return '';
+  const W = 320, H = 150, padL = 8, padR = 8, padT = 14, padB = 30;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const n = points.length;
+  const gap = 10;
+  const barW = Math.max(18, (innerW - gap*(n-1)) / n);
+  const totalW = barW*n + gap*(n-1);
+  const startX = padL + (innerW-totalW)/2;
+  const bars = points.map((p,i)=>{
+    const x = startX + i*(barW+gap);
+    const v = p.value==null ? 0 : p.value;
+    const h = (v/100)*innerH;
+    const y = padT + innerH - h;
+    const color = v>=60 ? '#2f8f5b' : '#c96a3c';
+    return (p.value!=null ?
+      '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="4" fill="'+color+'"/>' +
+      '<text x="'+(x+barW/2).toFixed(1)+'" y="'+(y-6).toFixed(1)+'" font-size="11" fill="'+color+'" text-anchor="middle" font-weight="700">'+Math.round(v)+'</text>'
+      : '<rect x="'+x.toFixed(1)+'" y="'+(padT+innerH-2)+'" width="'+barW.toFixed(1)+'" height="2" fill="#e2e0d8"/>') +
+      '<text x="'+(x+barW/2).toFixed(1)+'" y="'+(H-10)+'" font-size="9" fill="#6b6f76" text-anchor="middle">'+escapeHtml((p.label||'').slice(0,10))+'</text>';
+  }).join('');
+  return '<div class="card" style="padding:12px 8px;"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%; height:auto; display:block;">'+bars+'</svg></div>';
 }
 
 function renderStudent(){
@@ -926,11 +1053,13 @@ function renderStudent(){
     '</div>' +
     (state.quizzes.length ?
       '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
-      '<div class="detail-grid">'+quizHtml+'</div>'
+      '<div class="detail-grid">'+quizHtml+'</div>' +
+      lineChartSvg(state.quizzes.map(q=>({label:q.label, value:parseFloat((state.quizScores[s.id]||{})[q.slot_no])})))
       : '') +
     (state.perfTasks.length ?
       '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
-      '<div class="detail-grid">'+perfHtml+'</div>'
+      '<div class="detail-grid">'+perfHtml+'</div>' +
+      barChartSvg(state.perfTasks.map(t=>({label:t.label, value:rubricTotal(s.id,t.label).grade})))
       : '') +
     '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
@@ -967,6 +1096,31 @@ function renderStudent(){
   noteBox.onblur = ()=> updateStudentField(s.id,'teacher_note', noteBox.value);
 }
 
+function renderHwPicker(){
+  removeFab();
+  const today = todayStr();
+  const rows = state.homeworks.map(h=>{
+    const checked = h.check_date && h.check_date <= today;
+    return '<div class="card studentcard" data-pick="'+h.slot_no+'">' +
+      '<div class="name">'+escapeHtml(h.topic || ('Odev #'+h.slot_no))+
+        '<div style="font-size:11.5px; color:var(--ink-soft); font-weight:400;">Kontrol: '+(h.check_date?fmtDate(h.check_date):'belirtilmemis')+(checked?'':' (henuz gelmedi)')+'</div></div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>';
+  }).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster5">&lsaquo; '+state.cls+' listesine don</a>' +
+    (rows || '<div class="empty">Henuz odev tanimlanmadi.<br>Once "Odevleri Duzenle" ile odev ekle.</div>');
+  document.getElementById('toRoster5').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('[data-pick]').forEach(el=>{
+    el.onclick = ()=>{
+      state.activeHwSlot = parseInt(el.dataset.pick);
+      state.hwCheckFrom = 'hw_picker';
+      state.view = 'quick_hw';
+      render();
+    };
+  });
+}
+
 function renderHomeworks(){
   removeFab();
   const rows = state.homeworks.map(h=>
@@ -998,6 +1152,7 @@ function renderHomeworks(){
   $app.querySelectorAll('button[data-check]').forEach(btn=>{
     btn.onclick = ()=>{
       state.activeHwSlot = parseInt(btn.dataset.check);
+      state.hwCheckFrom = 'homeworks';
       state.view = 'quick_hw';
       render();
     };
