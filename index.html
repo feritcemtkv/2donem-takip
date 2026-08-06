@@ -1,1823 +1,1299 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>2. Donem Takip</title>
-  <style>
-    :root {
-      --navy: #1F4E78;
-      --navy-deep: #123152;
-      --navy-soft: #e8eef5;
-      --accent: #c96a3c;
-      --accent-soft: #f7e6dc;
-      --good: #2f8f5b;
-      --good-soft: #e3f3ea;
-      --paper: #fbfaf7;
-      --line: #e2e0d8;
-      --ink: #25262b;
-      --ink-soft: #6b6f76;
-      --radius: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      background: var(--paper);
-      color: var(--ink);
-    }
-
-    body {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    h1,
-    h2,
-    h3 {
-      font-family: Georgia, "Iowan Old Style", serif;
-      margin: 0;
-    }
-
-    .num {
-      font-variant-numeric: tabular-nums;
-    }
-
-    header.top {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: var(--navy);
-      color: #fff;
-      padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
-    }
-
-    header.top .back {
-      font-size: 22px;
-      line-height: 1;
-      padding: 6px 10px;
-      margin: -6px 0 -6px -10px;
-      cursor: pointer;
-      opacity: .9;
-      border-radius: 8px;
-    }
-
-    header.top .back:active {
-      background: rgba(255, 255, 255, .15);
-    }
-
-    header.top h1 {
-      font-size: 18px;
-      font-weight: 600;
-      flex: 1;
-      letter-spacing: .2px;
-    }
-
-    header.top .sub {
-      font-size: 12px;
-      opacity: .8;
-      font-family: inherit;
-    }
-
-    .classbar {
-      display: flex;
-      gap: 8px;
-      padding: 10px 14px;
-      background: var(--navy-deep);
-      overflow-x: auto;
-    }
-
-    .classbar button {
-      border: none;
-      background: rgba(255, 255, 255, .12);
-      color: #fff;
-      padding: 9px 18px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .classbar button.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    main {
-      padding: 14px 14px 60px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 14px;
-      margin-bottom: 10px;
-    }
-
-    .studentcard {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-    }
-
-    .studentcard:active {
-      background: #f5f4f0;
-    }
-
-    .studentcard .no {
-      font-size: 11px;
-      color: var(--ink-soft);
-      width: 28px;
-      flex-shrink: 0;
-      text-align: center;
-    }
-
-    .studentcard .name {
-      flex: 1;
-      font-size: 15.5px;
-      font-weight: 600;
-    }
-
-    .studentcard .pct {
-      font-size: 13px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--navy-soft);
-      color: var(--navy);
-      min-width: 44px;
-      text-align: center;
-    }
-
-    .studentcard .pct.low {
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .studentcard .chev {
-      color: var(--ink-soft);
-      font-size: 18px;
-    }
-
-    .sectiontitle {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--navy);
-      font-weight: 700;
-      margin: 22px 0 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .sectiontitle:first-child {
-      margin-top: 4px;
-    }
-
-    .sectiontitle .line {
-      flex: 1;
-      height: 1px;
-      background: var(--line);
-    }
-
-    .fab {
-      position: fixed;
-      right: 18px;
-      bottom: calc(18px + env(safe-area-inset-bottom));
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #fff;
-      font-size: 28px;
-      border: none;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
-      z-index: 15;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .fab:active {
-      transform: scale(.94);
-    }
-
-    .infobar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--navy-soft);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      font-size: 13.5px;
-      color: var(--navy);
-    }
-
-    .infobar b {
-      font-size: 16px;
-    }
-
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .field {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 8px;
-      text-align: center;
-    }
-
-    .field label {
-      display: block;
-      font-size: 11px;
-      color: var(--ink-soft);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .field input {
-      width: 100%;
-      border: none;
-      text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--navy);
-      background: transparent;
-      font-family: inherit;
-    }
-
-    .field input:focus {
-      outline: 2px solid var(--navy);
-      border-radius: 6px;
-    }
-
-    .hwrow {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 4px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .hwrow:last-child {
-      border-bottom: none;
-    }
-
-    .hwrow .topic {
-      flex: 1;
-      cursor: pointer;
-    }
-
-    .hwrow .topic .t {
-      font-size: 14.5px;
-      font-weight: 600;
-    }
-
-    .hwrow .topic .d {
-      font-size: 12px;
-      color: var(--ink-soft);
-    }
-
-    .hwrow.future .topic .t,
-    .hwrow.future .topic .d {
-      color: var(--ink-soft);
-      font-style: italic;
-    }
-
-    .toggle {
-      width: 50px;
-      height: 30px;
-      border-radius: 999px;
-      background: #dcdad2;
-      position: relative;
-      flex-shrink: 0;
-      border: none;
-    }
-
-    .toggle.on {
-      background: var(--good);
-    }
-
-    .toggle .knob {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #fff;
-      transition: left .15s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
-    }
-
-    .toggle.on .knob {
-      left: 23px;
-    }
-
-    textarea.note {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      font-family: inherit;
-      font-size: 14px;
-      min-height: 70px;
-      resize: vertical;
-      background: #fff;
-    }
-
-    .levelcard {
-      border: 2px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 8px;
-      cursor: pointer;
-    }
-
-    .levelcard.sel {
-      border-color: var(--good);
-      background: var(--good-soft);
-    }
-
-    .levelcard .lh {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-
-    .levelcard .lh .score {
-      color: var(--navy);
-    }
-
-    .levelcard .desc {
-      font-size: 12.5px;
-      color: var(--ink-soft);
-      line-height: 1.4;
-    }
-
-    .critblock {
-      margin-bottom: 20px;
-    }
-
-    .critblock h3 {
-      font-size: 14.5px;
-      margin-bottom: 8px;
-      color: var(--ink);
-      font-family: inherit;
-    }
-
-    .critblock .max {
-      font-size: 12px;
-      color: var(--ink-soft);
-      font-weight: 400;
-    }
-
-    .rubricsummary {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--navy);
-      color: #fff;
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      margin: 16px 0;
-    }
-
-    .rubricsummary .num {
-      font-size: 26px;
-      font-weight: 700;
-    }
-
-    .rubricsummary .lbl {
-      font-size: 11px;
-      opacity: .8;
-      text-transform: uppercase;
-    }
-
-    .levelpicker {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      margin-bottom: 14px;
-    }
-
-    .levelpicker button {
-      border: none;
-      background: var(--navy-soft);
-      color: var(--navy);
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .levelpicker button.active {
-      background: var(--navy);
-      color: #fff;
-    }
-
-    .studentpicker {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .studentpicker button {
-      border: 1px solid var(--line);
-      background: #fff;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .studentpicker button.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .rowline {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      padding: 9px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .rowline:last-child {
-      border-bottom: none;
-    }
-
-    .rowline .slot {
-      width: 26px;
-      font-size: 12px;
-      color: var(--ink-soft);
-      font-weight: 700;
-    }
-
-    .rowline input[type=text] {
-      flex: 2;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 14px;
-      font-family: inherit;
-    }
-
-    .rowline input[type=date] {
-      flex: 1;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 13px;
-      font-family: inherit;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--ink-soft);
-    }
-
-    .empty .big {
-      font-size: 38px;
-      margin-bottom: 8px;
-    }
-
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: calc(24px + env(safe-area-inset-bottom));
-      transform: translateX(-50%);
-      background: var(--ink);
-      color: #fff;
-      padding: 9px 18px;
-      border-radius: 999px;
-      font-size: 13px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .2s;
-      z-index: 50;
-    }
-
-    .toast.show {
-      opacity: .95;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--ink-soft);
-    }
-
-    .spin {
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--navy-soft);
-      border-top-color: var(--navy);
-      border-radius: 50%;
-      margin: 0 auto 12px;
-      animation: spin .7s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    a.linklike {
-      color: var(--navy);
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .backlink {
-      display: block;
-      margin-bottom: 14px;
-      color: var(--navy);
-      font-weight: 600;
-      text-decoration: none;
-      font-size: 14.5px;
-      cursor: pointer;
-    }
-
-    .loginwrap {
-      min-height: 80vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .loginbox {
-      width: 100%;
-      max-width: 340px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 28px 24px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, .08);
-    }
-
-    .loginbox h2 {
-      font-size: 20px;
-      color: var(--navy);
-      margin-bottom: 4px;
-      text-align: center;
-    }
-
-    .loginbox p.sub {
-      font-size: 12.5px;
-      color: var(--ink-soft);
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .loginbox label {
-      display: block;
-      font-size: 12px;
-      color: var(--ink-soft);
-      margin: 14px 0 5px;
-      font-weight: 600;
-    }
-
-    .loginbox input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 15px;
-      font-family: inherit;
-    }
-
-    .loginbox button {
-      width: 100%;
-      margin-top: 20px;
-      border: none;
-      background: var(--navy);
-      color: #fff;
-      padding: 13px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .loginbox button:disabled {
-      opacity: .6;
-    }
-
-    .loginbox .err {
-      color: #b3432f;
-      font-size: 12.5px;
-      margin-top: 10px;
-      text-align: center;
-      min-height: 16px;
-    }
-
-    .logoutlink {
-      font-size: 12px;
-      color: rgba(255, 255, 255, .75);
-      text-decoration: none;
-      margin-left: auto;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>2. Donem Takip</title>
+<style>
+  :root{
+    --navy:#1F4E78;
+    --navy-deep:#123152;
+    --navy-soft:#e8eef5;
+    --accent:#c96a3c;
+    --accent-soft:#f7e6dc;
+    --good:#2f8f5b;
+    --good-soft:#e3f3ea;
+    --paper:#fbfaf7;
+    --line:#e2e0d8;
+    --ink:#25262b;
+    --ink-soft:#6b6f76;
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style",serif; margin:0;}
+  .num{font-variant-numeric:tabular-nums;}
+
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:var(--navy); color:#fff;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.12);
+  }
+  header.top .back{
+    font-size:22px; line-height:1; padding:6px 10px; margin:-6px 0 -6px -10px;
+    cursor:pointer; opacity:.9; border-radius:8px;
+  }
+  header.top .back:active{background:rgba(255,255,255,.15);}
+  header.top h1{font-size:18px; font-weight:600; flex:1; letter-spacing:.2px;}
+  header.top .sub{font-size:12px; opacity:.8; font-family:inherit;}
+
+  .classbar{display:flex; gap:8px; padding:10px 14px; background:var(--navy-deep); overflow-x:auto;}
+  .classbar button{border:none; background:rgba(255,255,255,.12); color:#fff; padding:9px 18px; border-radius:999px; font-size:14px; font-weight:600; white-space:nowrap;}
+  .classbar button.active{background:var(--accent); color:#fff;}
+
+  main{padding:14px 14px 60px; max-width:720px; margin:0 auto;}
+
+  .card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:10px;}
+  .studentcard{display:flex; align-items:center; gap:12px; cursor:pointer;}
+  .studentcard:active{background:#f5f4f0;}
+  .studentcard .no{font-size:11px; color:var(--ink-soft); width:28px; flex-shrink:0; text-align:center;}
+  .studentcard .name{flex:1; font-size:15.5px; font-weight:600;}
+  .studentcard .pct{font-size:13px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--navy-soft); color:var(--navy); min-width:44px; text-align:center;}
+  .studentcard .pct.low{background:var(--accent-soft); color:var(--accent);}
+  .studentcard .chev{color:var(--ink-soft); font-size:18px;}
+
+  .sectiontitle{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--navy); font-weight:700; margin:22px 0 8px; display:flex; align-items:center; gap:8px;}
+  .sectiontitle:first-child{margin-top:4px;}
+  .sectiontitle .line{flex:1; height:1px; background:var(--line);}
+
+  .fab{position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; font-size:28px; border:none; box-shadow:0 4px 14px rgba(0,0,0,.25); z-index:15; display:flex; align-items:center; justify-content:center;}
+  .fab:active{transform:scale(.94);}
+
+  .infobar{display:flex; justify-content:space-between; align-items:center; background:var(--navy-soft); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px; font-size:13.5px; color:var(--navy);}
+  .infobar b{font-size:16px;}
+
+  .detail-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .field{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center;}
+  .field label{display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;}
+  .field input{width:100%; border:none; text-align:center; font-size:16px; font-weight:700; color:var(--navy); background:transparent; font-family:inherit;}
+  .field input:focus{outline:2px solid var(--navy); border-radius:6px;}
+
+  .hwrow{display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--line);}
+  .hwrow:last-child{border-bottom:none;}
+  .hwrow .topic{flex:1; cursor:pointer;}
+  .hwrow .topic .t{font-size:14.5px; font-weight:600;}
+  .hwrow .topic .d{font-size:12px; color:var(--ink-soft);}
+  .hwrow.future .topic .t, .hwrow.future .topic .d{color:var(--ink-soft); font-style:italic;}
+
+  .toggle{width:50px; height:30px; border-radius:999px; background:#dcdad2; position:relative; flex-shrink:0; border:none;}
+  .toggle.on{background:var(--good);}
+  .toggle .knob{position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s ease; box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .toggle.on .knob{left:23px;}
+
+  textarea.note{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px; font-family:inherit; font-size:14px; min-height:70px; resize:vertical; background:#fff;}
+
+  .levelcard{border:2px solid var(--line); border-radius:12px; padding:12px; margin-bottom:8px; cursor:pointer;}
+  .levelcard.sel{border-color:var(--good); background:var(--good-soft);}
+  .levelcard .lh{display:flex; justify-content:space-between; font-weight:700; font-size:14px; margin-bottom:4px;}
+  .levelcard .lh .score{color:var(--navy);}
+  .levelcard .desc{font-size:12.5px; color:var(--ink-soft); line-height:1.4;}
+
+  .critblock{margin-bottom:20px;}
+  .critblock h3{font-size:14.5px; margin-bottom:8px; color:var(--ink); font-family:inherit;}
+  .critblock .max{font-size:12px; color:var(--ink-soft); font-weight:400;}
+
+  .rubricsummary{display:flex; justify-content:space-between; align-items:center; background:var(--navy); color:#fff; border-radius:var(--radius); padding:14px 16px; margin:16px 0;}
+  .rubricsummary .num{font-size:26px; font-weight:700;}
+  .rubricsummary .lbl{font-size:11px; opacity:.8; text-transform:uppercase;}
+
+  .levelpicker{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px;}
+  .levelpicker button{border:none; background:var(--navy-soft); color:var(--navy); padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; white-space:nowrap;}
+  .levelpicker button.active{background:var(--navy); color:#fff;}
+
+  .studentpicker{display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px; -webkit-overflow-scrolling:touch;}
+  .studentpicker button{border:1px solid var(--line); background:#fff; padding:8px 14px; border-radius:999px; font-size:13px; white-space:nowrap;}
+  .studentpicker button.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+
+  .rowline{display:flex; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line);}
+  .rowline:last-child{border-bottom:none;}
+  .rowline .slot{width:26px; font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .rowline input[type=text]{flex:2; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:14px; font-family:inherit;}
+  .rowline input[type=date]{flex:1; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:13px; font-family:inherit;}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--ink-soft);}
+  .empty .big{font-size:38px; margin-bottom:8px;}
+
+  .toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 18px; border-radius:999px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:50;}
+  .toast.show{opacity:.95;}
+
+  .loading{text-align:center; padding:60px 20px; color:var(--ink-soft);}
+  .spin{width:28px; height:28px; border:3px solid var(--navy-soft); border-top-color:var(--navy); border-radius:50%; margin:0 auto 12px; animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  a.linklike{color:var(--navy); font-weight:600; text-decoration:none; cursor:pointer;}
+  .backlink{display:block; margin-bottom:14px; color:var(--navy); font-weight:600; text-decoration:none; font-size:14.5px; cursor:pointer;}
+
+  .loginwrap{min-height:80vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .loginbox{width:100%; max-width:340px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:28px 24px; box-shadow:0 8px 30px rgba(0,0,0,.08);}
+  .loginbox h2{font-size:20px; color:var(--navy); margin-bottom:4px; text-align:center;}
+  .loginbox p.sub{font-size:12.5px; color:var(--ink-soft); text-align:center; margin-bottom:20px;}
+  .loginbox label{display:block; font-size:12px; color:var(--ink-soft); margin:14px 0 5px; font-weight:600;}
+  .loginbox input{width:100%; border:1px solid var(--line); border-radius:10px; padding:12px; font-size:15px; font-family:inherit;}
+  .loginbox button{width:100%; margin-top:20px; border:none; background:var(--navy); color:#fff; padding:13px; border-radius:10px; font-weight:700; font-size:15px;}
+  .loginbox button:disabled{opacity:.6;}
+  .loginbox .err{color:#b3432f; font-size:12.5px; margin-top:10px; text-align:center; min-height:16px;}
+  .logoutlink{font-size:12px; color:rgba(255,255,255,.75); text-decoration:none; margin-left:auto; cursor:pointer;}
+</style>
 </head>
-
 <body>
 
-  <header class="top" id="topbar">
-    <div class="back" id="backBtn" style="visibility:hidden">&#8249;</div>
-    <div style="flex:1">
-      <h1 id="topTitle">2. Donem Takip</h1>
-      <div class="sub" id="topSub"></div>
-    </div>
-    <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
-  </header>
-  <div class="classbar" id="classbar"></div>
+<header class="top" id="topbar">
+  <div class="back" id="backBtn" style="visibility:hidden">&#8249;</div>
+  <div style="flex:1">
+    <h1 id="topTitle">2. Donem Takip</h1>
+    <div class="sub" id="topSub"></div>
+  </div>
+  <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
+</header>
+<div class="classbar" id="classbar"></div>
 
-  <main id="app"></main>
+<main id="app"></main>
 
-  <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-    import * as XLSX from 'https://esm.sh/xlsx@0.18.5';
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
-    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
-    let state = {
-      classes: [],
-      cls: null,
-      students: [],
-      homeworks: [],
-      hwStatus: {},
-      rubrics: {},
-      rubricScores: {},
-      view: 'roster',
-      currentStudentId: null,
-      activeHwSlot: null,
-      rubricLevel: 'P1',
-      rubricEdit: false,
-      sortBy: 'no',
-      loading: true,
+let state = {
+  classes: [],
+  cls: null,
+  students: [],
+  homeworks: [],
+  hwStatus: {},
+  rubrics: {},
+  rubricScores: {},
+  view: 'roster',
+  currentStudentId: null,
+  activeHwSlot: null,
+  activeQuizSlot: null,
+  rubricLevel: 'P1',
+  rubricEdit: false,
+  sortBy: 'no',
+  loading: true,
+};
+
+const $app = document.getElementById('app');
+const $classbar = document.getElementById('classbar');
+const $topTitle = document.getElementById('topTitle');
+const $topSub = document.getElementById('topSub');
+const $backBtn = document.getElementById('backBtn');
+const $toast = document.getElementById('toast');
+const $logoutLink = document.getElementById('logoutLink');
+
+function showToast(msg){
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>$toast.classList.remove('show'), 1600);
+}
+
+function fmtDate(d){
+  if(!d) return null;
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function todayStr(){
+  const t = new Date();
+  return t.toISOString().slice(0,10);
+}
+
+// ================= AUTH =================
+function toEmail(username){
+  username = username.trim();
+  if(username.includes('@')) return username;
+  return username + '@takip.local';
+}
+
+async function doLogin(username, password){
+  const $err = document.getElementById('loginErr');
+  const $btn = document.getElementById('loginBtn');
+  $err.textContent = '';
+  $btn.textContent = 'Giris yapiliyor...';
+  $btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: toEmail(username), password });
+  if(error){
+    $err.textContent = 'Kullanici adi veya sifre hatali.';
+    $btn.textContent = 'Giris Yap';
+    $btn.disabled = false;
+    return;
+  }
+  await startApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  $logoutLink.style.display = 'none';
+  renderLogin();
+}
+
+function renderLogin(){
+  $classbar.innerHTML = '';
+  $topTitle.textContent = '2. Donem Takip';
+  $topSub.textContent = '';
+  $backBtn.style.visibility = 'hidden';
+  $app.innerHTML =
+    '<div class="loginwrap"><div class="loginbox">' +
+      '<h2>Giris Yap</h2>' +
+      '<p class="sub">2. Donem Takip uygulamasina erismek icin giris yapin</p>' +
+      '<label>Kullanici Adi</label>' +
+      '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
+      '<label>Sifre</label>' +
+      '<input type="password" id="loginPass">' +
+      '<button id="loginBtn">Giris Yap</button>' +
+      '<div class="err" id="loginErr"></div>' +
+    '</div></div>';
+  const $user = document.getElementById('loginUser');
+  const $pass = document.getElementById('loginPass');
+  const submit = ()=> doLogin($user.value, $pass.value);
+  document.getElementById('loginBtn').onclick = submit;
+  $user.addEventListener('keydown', e=>{ if(e.key==='Enter') $pass.focus(); });
+  $pass.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$user.focus(), 50);
+}
+
+async function startApp(){
+  $logoutLink.style.display = 'inline';
+  await loadClasses();
+  if(state.classes.length){
+    await loadClass(state.classes[0].name);
+  } else {
+    state.loading = false;
+    render();
+  }
+}
+
+$logoutLink.onclick = doLogout;
+// ================= /AUTH =================
+
+async function loadClasses(){
+  const { data } = await sb.from('classes').select('*').order('sort_order');
+  state.classes = data || [];
+  return state.classes;
+}
+async function addClass(name){
+  name = name.trim();
+  if(!name) return;
+  if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    showToast('Bu sinif zaten var'); return;
+  }
+  const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+  const { data } = await sb.from('classes').insert({name, sort_order:maxOrder+1}).select();
+  if(data && data[0]) state.classes.push(data[0]);
+  await loadClass(name);
+}
+async function renameClass(oldName, newName){
+  newName = newName.trim();
+  if(!newName || newName===oldName) return;
+  const c = state.classes.find(x=>x.name===oldName);
+  if(c) c.name = newName;
+  await sb.from('classes').update({name:newName}).eq('name', oldName);
+  await sb.from('students').update({class_name:newName}).eq('class_name', oldName);
+  await sb.from('homeworks').update({class_name:newName}).eq('class_name', oldName);
+  await sb.from('rubrics').update({class_name:newName}).eq('class_name', oldName);
+  await loadClass(newName);
+  showToast('Sinif adi guncellendi');
+}
+async function deleteClass(name){
+  state.classes = state.classes.filter(c=>c.name!==name);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', name);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('homework_status').delete().in('student_id', ids);
+    await sb.from('rubric_scores').delete().in('student_id', ids);
+    await sb.from('students').delete().eq('class_name', name);
+  }
+  await sb.from('homeworks').delete().eq('class_name', name);
+  await sb.from('rubrics').delete().eq('class_name', name);
+  await sb.from('classes').delete().eq('name', name);
+  showToast('Sinif silindi');
+  const next = state.classes[0];
+  if(next) await loadClass(next.name);
+  else { state.cls=null; state.students=[]; state.homeworks=[]; state.loading=false; render(); }
+}
+
+async function loadClass(cls){
+  state.loading = true; render();
+  const { data: students } = await sb.from('students').select('*').eq('class_name',cls).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_name',cls).order('slot_no');
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_name',cls).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_name',cls).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows = [];
+  let rubricScoreRows = [];
+  let quizScoreRows = [];
+  if(ids.length){
+    const r1 = await sb.from('homework_status').select('*').in('student_id', ids);
+    hwStatusRows = r1.data || [];
+    const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids);
+    rubricScoreRows = r2.data || [];
+    const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids);
+    quizScoreRows = r3.data || [];
+  }
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_name', cls);
+
+  const hwStatus = {};
+  for(const row of hwStatusRows){
+    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
+    hwStatus[row.student_id][row.slot_no] = row.done;
+  }
+  const rubricScores = {};
+  for(const row of rubricScoreRows){
+    rubricScores[row.student_id] = rubricScores[row.student_id] || {};
+    rubricScores[row.student_id][row.level] = rubricScores[row.student_id][row.level] || {};
+    rubricScores[row.student_id][row.level][row.criteria_index] = row.score;
+  }
+  const rubrics = {};
+  for(const row of (rubricRows||[])){
+    rubrics[row.level] = row.criteria;
+  }
+  const quizScores = {};
+  for(const row of quizScoreRows){
+    quizScores[row.student_id] = quizScores[row.student_id] || {};
+    quizScores[row.student_id][row.slot_no] = row.score;
+  }
+
+  state.cls = cls;
+  state.students = students || [];
+  state.homeworks = homeworks || [];
+  state.hwStatus = hwStatus;
+  state.rubricScores = rubricScores;
+  state.rubrics = rubrics;
+  state.quizzes = quizzes || [];
+  state.perfTasks = perfTasks || [];
+  state.quizScores = quizScores;
+  state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
+  state.loading = false;
+  render();
+}
+
+function assignedCount(){
+  const today = todayStr();
+  return state.homeworks.filter(h => h.check_date && h.check_date <= today).length;
+}
+function completedCount(studentId){
+  const today = todayStr();
+  const st = state.hwStatus[studentId] || {};
+  let n = 0;
+  for(const h of state.homeworks){
+    if(h.check_date && h.check_date <= today && st[h.slot_no]) n++;
+  }
+  return n;
+}
+function pct(studentId){
+  const a = assignedCount();
+  if(a===0) return 0;
+  return Math.round((completedCount(studentId)/a)*100);
+}
+function rubricTotal(studentId, level){
+  const crit = state.rubrics[level] || [];
+  const scores = (state.rubricScores[studentId]||{})[level] || {};
+  let sum = 0, max = 0, any=false;
+  crit.forEach((c,i)=>{
+    max += c.max;
+    if(scores[i]!=null){ sum += scores[i]; any=true; }
+  });
+  return { sum, max, grade: any? Math.round(sum/max*100) : null };
+}
+function studentById(id){ return state.students.find(s=>s.id===id); }
+
+async function toggleAbsent(studentId){
+  const s = studentById(studentId);
+  if(!s) return;
+  s.absent = !s.absent;
+  render();
+  await sb.from('students').update({absent: s.absent}).eq('id', studentId);
+  showToast(s.absent ? 'Öğrenci okulda yok olarak işaretlendi' : 'Öğrenci aktif');
+}
+
+async function toggleHw(studentId, slotNo){
+  const cur = !!(state.hwStatus[studentId]||{})[slotNo];
+  const next = !cur;
+  state.hwStatus[studentId] = state.hwStatus[studentId] || {};
+  state.hwStatus[studentId][slotNo] = next;
+  render();
+  await sb.from('homework_status').upsert({student_id:studentId, slot_no:slotNo, done: next});
+}
+async function updateStudentField(studentId, field, value){
+  const s = studentById(studentId);
+  if(s) s[field] = value;
+  await sb.from('students').update({[field]: value}).eq('id', studentId);
+  showToast('Kaydedildi');
+}
+async function addPerfTask(label){
+  const maxSlot = Math.max(0, ...state.perfTasks.map(t=>t.slot_no||0));
+  const { data } = await sb.from('performance_tasks').insert({class_name:state.cls, slot_no:maxSlot+1, label}).select();
+  if(data && data[0]) state.perfTasks.push(data[0]);
+  state.rubricLevel = label;
+  state.view = 'rubric';
+  render();
+  showToast('Performans gorevi eklendi');
+}
+async function renamePerfTask(oldLabel, newLabel){
+  newLabel = newLabel.trim();
+  if(!newLabel || newLabel===oldLabel) return;
+  const t = state.perfTasks.find(x=>x.label===oldLabel);
+  if(t) t.label = newLabel;
+  if(state.rubrics[oldLabel]){ state.rubrics[newLabel] = state.rubrics[oldLabel]; delete state.rubrics[oldLabel]; }
+  for(const sid in state.rubricScores){
+    if(state.rubricScores[sid][oldLabel]){
+      state.rubricScores[sid][newLabel] = state.rubricScores[sid][oldLabel];
+      delete state.rubricScores[sid][oldLabel];
+    }
+  }
+  state.rubricLevel = newLabel;
+  render();
+  await sb.from('performance_tasks').update({label:newLabel}).eq('class_name', state.cls).eq('label', oldLabel);
+  await sb.from('rubrics').update({level:newLabel}).eq('class_name', state.cls).eq('level', oldLabel);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('rubric_scores').update({level:newLabel}).eq('level', oldLabel).in('student_id', ids);
+  }
+  showToast('Isim guncellendi');
+}
+async function deletePerfTask(label){
+  state.perfTasks = state.perfTasks.filter(t=>t.label!==label);
+  delete state.rubrics[label];
+  for(const sid in state.rubricScores){ delete state.rubricScores[sid][label]; }
+  state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
+  state.view = 'roster';
+  render();
+  await sb.from('performance_tasks').delete().eq('class_name', state.cls).eq('label', label);
+  await sb.from('rubrics').delete().eq('class_name', state.cls).eq('level', label);
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
+  }
+  showToast('Performans gorevi silindi');
+}
+
+async function addQuiz(){
+  const label = prompt('Yeni quiz adi (orn. Quiz 3):');
+  if(!label || !label.trim()) return;
+  const maxSlot = Math.max(0, ...state.quizzes.map(q=>q.slot_no||0));
+  const { data } = await sb.from('quizzes').insert({class_name:state.cls, slot_no:maxSlot+1, label:label.trim()}).select();
+  if(data && data[0]) state.quizzes.push(data[0]);
+  render();
+  showToast('Quiz eklendi');
+}
+async function renameQuiz(slotNo, label){
+  const q = state.quizzes.find(x=>x.slot_no===slotNo);
+  if(q) q.label = label;
+  await sb.from('quizzes').update({label}).eq('class_name', state.cls).eq('slot_no', slotNo);
+}
+async function deleteQuiz(slotNo){
+  if(!confirm('Bu quiz silinsin mi? Ogrencilerin bu quize ait notlari da silinir.')) return;
+  state.quizzes = state.quizzes.filter(q=>q.slot_no!==slotNo);
+  render();
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
+  }
+  await sb.from('quizzes').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  showToast('Quiz silindi');
+}
+async function updateQuizScore(studentId, slotNo, value){
+  state.quizScores[studentId] = state.quizScores[studentId] || {};
+  state.quizScores[studentId][slotNo] = value;
+  await sb.from('quiz_scores').upsert({student_id:studentId, slot_no:slotNo, score:value});
+  showToast('Kaydedildi');
+}
+
+async function saveRubric(level){
+  const criteria = state.rubrics[level] || [];
+  await sb.from('rubrics').upsert({class_name: state.cls, level, criteria}, {onConflict:'class_name,level'});
+}
+function addCriterion(level){
+  state.rubrics[level] = state.rubrics[level] || [];
+  state.rubrics[level].push({name:'Yeni Olcut', max:4, levels:[
+    {score:4, label:'Mukemmel', desc:''},
+    {score:3, label:'Iyi', desc:''},
+    {score:2, label:'Orta', desc:''},
+    {score:1, label:'Gelistirilmesi Gerekir', desc:''},
+  ]});
+  saveRubric(level);
+  render();
+}
+function deleteCriterion(level, ci){
+  if(!confirm('Bu olcut silinsin mi?')) return;
+  state.rubrics[level].splice(ci,1);
+  saveRubric(level);
+  render();
+}
+function updateCriterion(level, ci, field, value){
+  state.rubrics[level][ci][field] = field==='max' ? (parseInt(value)||1) : value;
+  saveRubric(level);
+}
+function addLevel(level, ci){
+  const c = state.rubrics[level][ci];
+  c.levels = c.levels || [];
+  c.levels.push({score:1, label:'Yeni Seviye', desc:''});
+  saveRubric(level);
+  render();
+}
+function deleteLevel(level, ci, li){
+  state.rubrics[level][ci].levels.splice(li,1);
+  saveRubric(level);
+  render();
+}
+function updateLevel(level, ci, li, field, value){
+  const lv = state.rubrics[level][ci].levels[li];
+  lv[field] = field==='score' ? (parseInt(value)||0) : value;
+  saveRubric(level);
+}
+
+async function setRubricScore(studentId, level, critIndex, score){
+  state.rubricScores[studentId] = state.rubricScores[studentId] || {};
+  state.rubricScores[studentId][level] = state.rubricScores[studentId][level] || {};
+  state.rubricScores[studentId][level][critIndex] = score;
+  render();
+  await sb.from('rubric_scores').upsert({student_id:studentId, level, criteria_index:critIndex, score});
+  showToast('Puan kaydedildi');
+}
+async function updateHomework(slotNo, field, value){
+  const hw = state.homeworks.find(h=>h.slot_no===slotNo);
+  if(hw) hw[field] = value;
+  await sb.from('homeworks').update({[field]: value}).eq('class_name', state.cls).eq('slot_no', slotNo);
+}
+async function addHomework(){
+  const maxSlot = Math.max(0, ...state.homeworks.map(h=>h.slot_no||0));
+  const nextSlot = maxSlot+1;
+  const { data } = await sb.from('homeworks').insert({class_name:state.cls, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
+  if(data && data[0]) state.homeworks.push(data[0]);
+  render();
+  showToast('Odev eklendi');
+}
+async function deleteHomework(slotNo){
+  state.homeworks = state.homeworks.filter(h=>h.slot_no!==slotNo);
+  render();
+  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const ids = (students||[]).map(s=>s.id);
+  if(ids.length){
+    await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
+  }
+  await sb.from('homeworks').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  showToast('Odev silindi');
+}
+async function addStudent(name){
+  const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
+  const { data } = await sb.from('students').insert({class_name:state.cls, name, sort_order:maxOrder+1}).select();
+  if(data && data[0]) state.students.push(data[0]);
+  render();
+  showToast('Ogrenci eklendi');
+}
+async function renameStudent(studentId, newName){
+  const s = studentById(studentId);
+  if(s) s.name = newName;
+  render();
+  await sb.from('students').update({name:newName}).eq('id', studentId);
+  showToast('Isim guncellendi');
+}
+async function deleteStudent(studentId){
+  state.students = state.students.filter(s=>s.id!==studentId);
+  delete state.hwStatus[studentId];
+  delete state.rubricScores[studentId];
+  state.view = 'roster';
+  render();
+  await sb.from('students').delete().eq('id', studentId);
+  showToast('Ogrenci silindi');
+}
+
+async function exportBackup(){
+  showToast('Yedek hazirlaniyor...');
+  const [c,s,h,hs,r,rs] = await Promise.all([
+    sb.from('classes').select('*'),
+    sb.from('students').select('*'),
+    sb.from('homeworks').select('*'),
+    sb.from('homework_status').select('*'),
+    sb.from('rubrics').select('*'),
+    sb.from('rubric_scores').select('*'),
+  ]);
+  const backup = {
+    exported_at: new Date().toISOString(),
+    classes: c.data||[], students: s.data||[], homeworks: h.data||[],
+    homework_status: hs.data||[], rubrics: r.data||[], rubric_scores: rs.data||[],
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = 'takip-yedek-'+stamp+'.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  showToast('Yedek indirildi');
+}
+
+function exportCSV() {
+  if(!state.cls || !state.students.length) {
+    showToast('Disa aktarilacak ogrenci yok');
+    return;
+  }
+  let csv = '\uFEFF'; 
+  let headers = ['No', 'Ad Soyad', 'Durum'];
+  state.quizzes.forEach(q => headers.push(q.label));
+  state.perfTasks.forEach(t => headers.push(t.label));
+  headers.push('Odev Durumu (%)');
+  headers.push('Ogretmen Notu');
+  csv += headers.join(';') + '\n';
+  
+  const sorted = [...state.students].sort((a,b)=>{
+    const na = parseInt(a.no), nb = parseInt(b.no);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va!==vb) return va-vb;
+    return a.name.localeCompare(b.name,'tr');
+  });
+  
+  sorted.forEach(s => {
+    let row = [];
+    row.push(s.no || '');
+    row.push(s.name || '');
+    row.push(s.absent ? 'Okulda Yok' : 'Aktif');
+    state.quizzes.forEach(q => {
+      let val = (state.quizScores[s.id]||{})[q.slot_no] || '';
+      row.push(val);
+    });
+    state.perfTasks.forEach(t => {
+      let total = rubricTotal(s.id, t.label);
+      row.push(total.grade != null ? total.grade : '');
+    });
+    row.push(pct(s.id));
+    let note = s.teacher_note || '';
+    note = note.replace(/"/g, '""');
+    if(note.includes(';') || note.includes('\n') || note.includes('"')) {
+      note = '"' + note + '"';
+    }
+    row.push(note);
+    csv += row.join(';') + '\n';
+  });
+  
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = state.cls + '_Notlar_' + stamp + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  showToast('Excel (CSV) indirildi');
+}
+
+function render(){
+  renderClassbar();
+  renderTopbar();
+  if(state.loading){
+    $app.innerHTML = '<div class="loading"><div class="spin"></div>Yukleniyor...</div>';
+    return;
+  }
+  if(!state.cls){
+    $app.innerHTML = '<div class="empty"><div class="big">&#127891;</div>Henuz sinif yok.<br>Ustteki "+ Sinif" ile ilk sinifini ekle.</div>';
+    return;
+  }
+  if(state.view==='roster') renderRoster();
+  else if(state.view==='student') renderStudent();
+  else if(state.view==='homeworks') renderHomeworks();
+  else if(state.view==='quick_hw') renderQuickHw();
+  else if(state.view==='quizzes') renderQuizzes();
+  else if(state.view==='quick_quiz') renderQuickQuiz();
+  else if(state.view==='rubric') renderRubric();
+}
+
+function renderClassbar(){
+  $classbar.innerHTML = state.classes.map(c=>
+    '<button class="'+(c.name===state.cls&&state.view==='roster'?'active':'')+'" data-cls="'+c.name+'">'+c.name+'</button>'
+  ).join('') + '<button data-add="1" style="background:rgba(255,255,255,.3)">+ Sinif</button>';
+  $classbar.querySelectorAll('button[data-cls]').forEach(b=>{
+    b.onclick = ()=>{ state.view='roster'; loadClass(b.dataset.cls); };
+  });
+  const addBtn = $classbar.querySelector('button[data-add]');
+  if(addBtn) addBtn.onclick = ()=>{
+    const name = prompt('Yeni sinif adi (orn. 11A):');
+    if(name && name.trim()) addClass(name.trim());
+  };
+}
+
+function renderTopbar(){
+  if(!state.cls){
+    $backBtn.style.visibility='hidden';
+    $topTitle.textContent = '2. Donem Takip';
+    $topSub.textContent = '';
+    return;
+  }
+  if(state.view==='roster'){
+    $backBtn.style.visibility='hidden';
+    $topTitle.textContent = state.cls + ' Subesi';
+    $topSub.textContent = state.students.length + ' ogrenci';
+  } else if(state.view==='student'){
+    $backBtn.style.visibility='visible';
+    const s = studentById(state.currentStudentId);
+    $topTitle.textContent = s ? s.name : '';
+    $topSub.textContent = state.cls;
+  } else if(state.view==='homeworks'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Odev Tanimlama';
+    $topSub.textContent = state.cls;
+  } else if(state.view==='quick_hw'){
+    $backBtn.style.visibility='visible';
+    const hw = state.homeworks.find(h=>h.slot_no===state.activeHwSlot);
+    $topTitle.textContent = 'Hızlı Ödev Kontrolü';
+    $topSub.textContent = hw ? (hw.topic || ('Ödev #' + hw.slot_no)) : state.cls;
+  } else if(state.view==='quizzes'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Quiz Yonetimi';
+    $topSub.textContent = state.cls;
+  } else if(state.view==='quick_quiz'){
+    $backBtn.style.visibility='visible';
+    const q = state.quizzes.find(x=>x.slot_no===state.activeQuizSlot);
+    $topTitle.textContent = 'Toplu Not Girisi';
+    $topSub.textContent = q ? q.label : state.cls;
+  } else if(state.view==='rubric'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Performans Rubrigi';
+    $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
+  }
+}
+$backBtn.onclick = ()=>{ 
+  if(state.view==='quick_hw') state.view='homeworks';
+  else if(state.view==='quick_quiz') state.view='quizzes';
+  else state.view='roster'; 
+  render(); 
+};
+
+function renderRoster(){
+  const a = assignedCount();
+  $app.innerHTML =
+    '<div class="infobar">' +
+      '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
+      '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
+    '</div>' +
+    '<div style="margin:-6px 0 14px; font-size:12.5px;">' +
+      '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
+    '<div style="display:flex; gap:6px; margin-bottom:10px;">' +
+      '<button id="sortNo" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
+      '<button id="sortName" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='name'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='name'?'#fff':'var(--navy)')+';">Isme gore</button>' +
+    '</div>' +
+    '<div id="rosterList"></div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
+      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans gorevi yok.</div>' : '') +
+    '</div>' +
+    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Gorevi Ekle</button>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
+      '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
+    '</div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Veri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="excelLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128202; Excel Indir</button>' +
+      '<button id="backupLink" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128190; Yedekle</button>' +
+    '</div>';
+  document.getElementById('hwLink').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
+  document.getElementById('backupLink').onclick = exportBackup;
+  document.getElementById('excelLink').onclick = exportCSV;
+  document.getElementById('addPerfBtn2').onclick = ()=>{
+    const label = prompt('Yeni performans gorevinin adi (orn. Performans 4):');
+    if(label && label.trim()) addPerfTask(label.trim());
+  };
+  document.getElementById('renameClsBtn').onclick = ()=>{
+    const nn = prompt('Yeni sinif adi:', state.cls);
+    if(nn && nn.trim() && nn.trim()!==state.cls) renameClass(state.cls, nn.trim());
+  };
+  document.getElementById('deleteClsBtn').onclick = ()=>{
+    if(confirm(state.cls+' sinifi ve tum ogrenci/odev/rubrik verileri kalici olarak silinsin mi?')){
+      deleteClass(state.cls);
+    }
+  };
+  $app.querySelectorAll('.levelpicker-btn').forEach(b=>{
+    b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; state.view='rubric'; state.currentStudentId = state.students[0] ? state.students[0].id : null; render(); };
+  });
+
+  document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
+  document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
+
+  const list = document.getElementById('rosterList');
+  if(!state.students.length){
+    list.innerHTML = '<div class="empty"><div class="big">&#128118;</div>Henuz ogrenci yok.<br>Sag alttaki + ile ekleyebilirsin.</div>';
+  } else {
+    const sorted = [...state.students].sort((a,b)=>{
+      if(state.sortBy==='name'){
+        return a.name.localeCompare(b.name,'tr');
+      }
+      const na = parseInt(a.no), nb = parseInt(b.no);
+      const va = isNaN(na) ? Infinity : na;
+      const vb = isNaN(nb) ? Infinity : nb;
+      if(va!==vb) return va-vb;
+      return a.name.localeCompare(b.name,'tr');
+    });
+    list.innerHTML = sorted.map(s=>{
+      const p = pct(s.id);
+      const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:8px;">Okulda Yok</span>' : '';
+      return '<div class="card studentcard" data-id="'+s.id+'">' +
+        '<div class="no">'+(s.no||'')+'</div>' +
+        '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
+        '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
+        '<div class="chev">&rsaquo;</div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.studentcard').forEach(el=>{
+      el.onclick = ()=>{ state.currentStudentId = el.dataset.id; state.view='student'; render(); };
+    });
+  }
+  ensureFab('+', ()=>{
+    const name = prompt('Yeni ogrencinin adi soyadi:');
+    if(name && name.trim()) addStudent(name.trim());
+  });
+}
+
+function renderStudent(){
+  removeFab();
+  const s = studentById(state.currentStudentId);
+  if(!s){ state.view='roster'; return render(); }
+  const today = todayStr();
+  
+  let quizSum = 0, quizCount = 0;
+  state.quizzes.forEach(q => {
+    const val = parseFloat((state.quizScores[s.id] || {})[q.slot_no]);
+    if(!isNaN(val)) { quizSum += val; quizCount++; }
+  });
+  const quizAvg = quizCount > 0 ? Math.round(quizSum / quizCount) : '-';
+
+  let perfSum = 0, perfCount = 0;
+  state.perfTasks.forEach(t => {
+    const total = rubricTotal(s.id, t.label);
+    if(total.grade != null) { perfSum += total.grade; perfCount++; }
+  });
+  const perfAvg = perfCount > 0 ? Math.round(perfSum / perfCount) : '-';
+  
+  const hwPct = pct(s.id);
+
+  const hwRows = state.homeworks.map(h=>{
+    const future = !h.check_date || h.check_date > today;
+    const done = !!(state.hwStatus[s.id]||{})[h.slot_no];
+    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
+    const dateLine = (h.hw_date ? ('Verildi: '+fmtDate(h.hw_date)) : 'Verilis tarihi yok') +
+      ' &middot; ' + (h.check_date ? ('Kontrol: '+fmtDate(h.check_date)) : 'Kontrol tarihi yok');
+    return '<div class="hwrow '+(future?'future':'')+'">' +
+      '<div class="topic">' +
+        '<div class="t">'+escapeHtml(topic)+'</div>' +
+        '<div class="d">'+dateLine+'</div>' +
+      '</div>' +
+      '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slot_no+'" '+(future?'disabled style="opacity:.4"':'')+'><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
+
+  const quizHtml = state.quizzes.map(q=>{
+    const val = (state.quizScores[s.id]||{})[q.slot_no] || '';
+    return '<div class="field"><label>'+escapeHtml(q.label)+'</label><input type="text" data-quiz="'+q.slot_no+'" value="'+escapeHtml(val)+'"></div>';
+  }).join('');
+
+  const perfHtml = state.perfTasks.map(t=>{
+    const total = rubricTotal(s.id, t.label);
+    return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">'+(total.grade??'-')+'</div></div>';
+  }).join('');
+
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Quiz Ort.</div><b class="num" style="font-size:18px;">'+quizAvg+'</b></div>' +
+      '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Perf. Ort.</div><b class="num" style="font-size:18px;">'+perfAvg+'</b></div>' +
+      '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
+      '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Ödev Durumu</div><b class="num" style="font-size:18px;">%'+hwPct+'</b></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Ogrenci Bilgisi</span><span class="line"></span></div>' +
+    '<div class="detail-grid">' +
+      '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
+    '</div>' +
+    (state.quizzes.length ?
+      '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
+      '<div class="detail-grid">'+quizHtml+'</div>'
+      : '') +
+    (state.perfTasks.length ?
+      '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
+      '<div class="detail-grid">'+perfHtml+'</div>'
+      : '') +
+    '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
+    '<div class="card">'+hwRows+'</div>' +
+    '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
+    '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Ogrenci Islemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:10px;">' +
+      '<button id="renameBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ismi Duzenle</button>' +
+      '<button id="deleteBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ogrenciyi Sil</button>' +
+    '</div>';
+
+  document.getElementById('renameBtn').onclick = ()=>{
+    const newName = prompt('Yeni ad soyad:', s.name);
+    if(newName && newName.trim() && newName.trim()!==s.name) renameStudent(s.id, newName.trim());
+  };
+  document.getElementById('deleteBtn').onclick = ()=>{
+    if(confirm(s.name+' silinsin mi? Bu islem geri alinamaz, tum odev ve rubrik verileri de silinir.')){
+      deleteStudent(s.id);
+    }
+  };
+  document.getElementById('toRoster').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('[data-quiz]').forEach(inp=>{
+    inp.onblur = ()=> updateQuizScore(s.id, parseInt(inp.dataset.quiz), inp.value);
+  });
+  $app.querySelectorAll('.field input').forEach(inp=>{
+    if(inp.dataset.quiz) return;
+    inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
+  });
+  $app.querySelectorAll('.toggle').forEach(btn=>{
+    if(btn.disabled) return;
+    btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
+  });
+  const noteBox = document.getElementById('noteBox');
+  noteBox.onblur = ()=> updateStudentField(s.id,'teacher_note', noteBox.value);
+}
+
+function renderHomeworks(){
+  removeFab();
+  const rows = state.homeworks.map(h=>
+    '<div style="border-bottom:1px solid var(--line); padding:12px 0;">' +
+      '<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">' +
+        '<div class="slot">#'+h.slot_no+'</div>' +
+        '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic" style="flex:1; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:14px; font-family:inherit;">' +
+        '<button data-del="'+h.slot_no+'" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; align-items:center;">' +
+        '<div style="flex:1;"><label style="display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:2px;">Verildigi Tarih</label>' +
+        '<input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date" style="width:100%; border:1px solid var(--line); border-radius:8px; padding:7px; font-size:13px; font-family:inherit;"></div>' +
+        '<div style="flex:1;"><label style="display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:2px;">Kontrol Tarihi</label>' +
+        '<input type="date" value="'+(h.check_date||'')+'" data-slot="'+h.slot_no+'" data-f="check_date" style="width:100%; border:1px solid var(--line); border-radius:8px; padding:7px; font-size:13px; font-family:inherit;"></div>' +
+        '<button data-check="'+h.slot_no+'" style="align-self:flex-end; border:1px solid var(--navy); background:var(--navy-soft); color:var(--navy); padding:8px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap;">Kontrol Et</button>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster2">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="card">'+(rows||'<div class="empty">Henuz odev yok.</div>')+'</div>' +
+    '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Odev Ekle</button>' +
+    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">"Verildigi Tarih" bilgi amaclidir. Tamamlanma yuzdesi ve "gelecek odev" durumu "Kontrol Tarihi"ne gore hesaplanir — kontrol tarihi gelmeden odev yuzdeye dahil edilmez.</p>';
+  document.getElementById('toRoster2').onclick = ()=>{ state.view='roster'; render(); };
+  document.getElementById('addHwBtn').onclick = addHomework;
+  $app.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value || null);
+  });
+  $app.querySelectorAll('button[data-check]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.activeHwSlot = parseInt(btn.dataset.check);
+      state.view = 'quick_hw';
+      render();
     };
-
-    const $app = document.getElementById('app');
-    const $classbar = document.getElementById('classbar');
-    const $topTitle = document.getElementById('topTitle');
-    const $topSub = document.getElementById('topSub');
-    const $backBtn = document.getElementById('backBtn');
-    const $toast = document.getElementById('toast');
-    const $logoutLink = document.getElementById('logoutLink');
-
-    function showToast(msg) {
-      $toast.textContent = msg;
-      $toast.classList.add('show');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => $toast.classList.remove('show'), 1600);
-    }
-
-    function fmtDate(d) {
-      if (!d) return null;
-      const dt = new Date(d + 'T00:00:00');
-      return dt.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    function todayStr() {
-      const t = new Date();
-      return t.toISOString().slice(0, 10);
-    }
-
-    // ================= AUTH =================
-    function toEmail(username) {
-      username = username.trim();
-      if (username.includes('@')) return username;
-      return username + '@takip.local';
-    }
-
-    async function doLogin(username, password) {
-      const $err = document.getElementById('loginErr');
-      const $btn = document.getElementById('loginBtn');
-      $err.textContent = '';
-      $btn.textContent = 'Giris yapiliyor...';
-      $btn.disabled = true;
-      const { error } = await sb.auth.signInWithPassword({ email: toEmail(username), password });
-      if (error) {
-        $err.textContent = 'Kullanici adi veya sifre hatali.';
-        $btn.textContent = 'Giris Yap';
-        $btn.disabled = false;
-        return;
+  });
+  $app.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(confirm('Bu odev silinsin mi? Ogrencilerin bu odeve ait isaretleri de silinir.')){
+        deleteHomework(parseInt(btn.dataset.del));
       }
-      await startApp();
-    }
+    };
+  });
+}
 
-    async function doLogout() {
-      await sb.auth.signOut();
-      $logoutLink.style.display = 'none';
-      renderLogin();
-    }
+function renderQuickHw(){
+  removeFab();
+  const slotNo = state.activeHwSlot;
+  const hw = state.homeworks.find(h=>h.slot_no===slotNo);
+  if(!hw){ state.view='homeworks'; return render(); }
 
-    function renderLogin() {
-      $classbar.innerHTML = '';
-      $topTitle.textContent = '2. Donem Takip';
-      $topSub.textContent = '';
-      $backBtn.style.visibility = 'hidden';
-      $app.innerHTML =
-        '<div class="loginwrap"><div class="loginbox">' +
-        '<h2>Giris Yap</h2>' +
-        '<p class="sub">2. Donem Takip uygulamasina erismek icin giris yapin</p>' +
-        '<label>Kullanici Adi</label>' +
-        '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
-        '<label>Sifre</label>' +
-        '<input type="password" id="loginPass">' +
-        '<button id="loginBtn">Giris Yap</button>' +
-        '<div class="err" id="loginErr"></div>' +
-        '</div></div>';
-      const $user = document.getElementById('loginUser');
-      const $pass = document.getElementById('loginPass');
-      const submit = () => doLogin($user.value, $pass.value);
-      document.getElementById('loginBtn').onclick = submit;
-      $user.addEventListener('keydown', e => { if (e.key === 'Enter') $pass.focus(); });
-      $pass.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-      setTimeout(() => $user.focus(), 50);
-    }
+  const sorted = [...state.students].sort((a,b)=>{
+    const na = parseInt(a.no), nb = parseInt(b.no);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va!==vb) return va-vb;
+    return a.name.localeCompare(b.name,'tr');
+  });
 
-    async function startApp() {
-      $logoutLink.style.display = 'inline';
-      await loadClasses();
-      if (state.classes.length) {
-        await loadClass(state.classes[0].name);
-      } else {
-        state.loading = false;
-        render();
-      }
-    }
+  const listHtml = sorted.map(s=>{
+    const done = !!(state.hwStatus[s.id]||{})[slotNo];
+    return '<div class="card" style="display:flex; align-items:center; gap:10px;">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name" style="flex:1; font-size:15.5px; font-weight:600;">'+escapeHtml(s.name)+'</div>' +
+      '<button data-absent-id="'+s.id+'" style="border:1px solid '+(s.absent?'#b3432f':'var(--line)')+'; background:'+(s.absent?'#fdecea':'#fff')+'; color:'+(s.absent?'#b3432f':'var(--ink-soft)')+'; padding:6px 10px; border-radius:8px; font-size:11.5px; font-weight:700; white-space:nowrap;">'+(s.absent?'Okulda Yok':'Yok mu?')+'</button>' +
+      '<button class="toggle '+(done?'on':'')+'" data-quick-slot="'+slotNo+'" data-quick-id="'+s.id+'"><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
 
-    $logoutLink.onclick = doLogout;
-    // ================= /AUTH =================
+  $app.innerHTML =
+    '<a class="backlink" id="toHwList">&lsaquo; Ödev listesine dön</a>' +
+    '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:16px;">' +
+      '<div><b>'+escapeHtml(hw.topic || ('Ödev #' + hw.slot_no))+'</b><div style="font-size:12px; opacity:0.8;">Verildi: '+(hw.hw_date ? fmtDate(hw.hw_date) : 'Belirtilmemiş')+' &middot; Kontrol: '+(hw.check_date ? fmtDate(hw.check_date) : 'Belirtilmemiş')+'</div></div>' +
+    '</div>' +
+    '<div class="sectiontitle"><span>Ödev Yapanlar (Tıklayıp İşaretleyin)</span><span class="line"></span></div>' +
+    (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>');
 
-    async function loadClasses() {
-      const { data } = await sb.from('classes').select('*').order('sort_order');
-      state.classes = data || [];
-      return state.classes;
-    }
-    async function addClass(name) {
-      name = name.trim();
-      if (!name) return;
-      if (state.classes.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        showToast('Bu sinif zaten var'); return;
-      }
-      const maxOrder = Math.max(-1, ...state.classes.map(c => c.sort_order || 0));
-      const { data } = await sb.from('classes').insert({ name, sort_order: maxOrder + 1 }).select();
-      if (data && data[0]) state.classes.push(data[0]);
-      await loadClass(name);
-    }
-    async function renameClass(oldName, newName) {
-      newName = newName.trim();
-      if (!newName || newName === oldName) return;
-      const c = state.classes.find(x => x.name === oldName);
-      if (c) c.name = newName;
-      await sb.from('classes').update({ name: newName }).eq('name', oldName);
-      await sb.from('students').update({ class_name: newName }).eq('class_name', oldName);
-      await sb.from('homeworks').update({ class_name: newName }).eq('class_name', oldName);
-      await sb.from('rubrics').update({ class_name: newName }).eq('class_name', oldName);
-      await loadClass(newName);
-      showToast('Sinif adi guncellendi');
-    }
-    async function deleteClass(name) {
-      state.classes = state.classes.filter(c => c.name !== name);
-      const { data: students } = await sb.from('students').select('id').eq('class_name', name);
-      const ids = (students || []).map(s => s.id);
-      if (ids.length) {
-        await sb.from('homework_status').delete().in('student_id', ids);
-        await sb.from('rubric_scores').delete().in('student_id', ids);
-        await sb.from('students').delete().eq('class_name', name);
-      }
-      await sb.from('homeworks').delete().eq('class_name', name);
-      await sb.from('rubrics').delete().eq('class_name', name);
-      await sb.from('classes').delete().eq('name', name);
-      showToast('Sinif silindi');
-      const next = state.classes[0];
-      if (next) await loadClass(next.name);
-      else { state.cls = null; state.students = []; state.homeworks = []; state.loading = false; render(); }
-    }
+  document.getElementById('toHwList').onclick = ()=>{ state.view='homeworks'; render(); };
+  $app.querySelectorAll('[data-quick-slot]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const sid = btn.dataset.quickId;
+      const sslot = parseInt(btn.dataset.quickSlot);
+      await toggleHw(sid, sslot);
+      renderQuickHw();
+    };
+  });
+  $app.querySelectorAll('[data-absent-id]').forEach(btn=>{
+    btn.onclick = ()=> toggleAbsent(btn.dataset.absentId);
+  });
+}
 
-    async function loadClass(cls) {
-      state.loading = true; render();
-      const { data: students } = await sb.from('students').select('*').eq('class_name', cls).order('sort_order');
-      const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_name', cls).order('slot_no');
-      const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_name', cls).order('slot_no');
-      const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_name', cls).order('slot_no');
-      const ids = (students || []).map(s => s.id);
-      let hwStatusRows = [];
-      let rubricScoreRows = [];
-      let quizScoreRows = [];
-      if (ids.length) {
-        const r1 = await sb.from('homework_status').select('*').in('student_id', ids);
-        hwStatusRows = r1.data || [];
-        const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids);
-        rubricScoreRows = r2.data || [];
-        const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids);
-        quizScoreRows = r3.data || [];
-      }
-      const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_name', cls);
-
-      const hwStatus = {};
-      for (const row of hwStatusRows) {
-        hwStatus[row.student_id] = hwStatus[row.student_id] || {};
-        hwStatus[row.student_id][row.slot_no] = row.done;
-      }
-      const rubricScores = {};
-      for (const row of rubricScoreRows) {
-        rubricScores[row.student_id] = rubricScores[row.student_id] || {};
-        rubricScores[row.student_id][row.level] = rubricScores[row.student_id][row.level] || {};
-        rubricScores[row.student_id][row.level][row.criteria_index] = row.score;
-      }
-      const rubrics = {};
-      for (const row of (rubricRows || [])) {
-        rubrics[row.level] = row.criteria;
-      }
-      const quizScores = {};
-      for (const row of quizScoreRows) {
-        quizScores[row.student_id] = quizScores[row.student_id] || {};
-        quizScores[row.student_id][row.slot_no] = row.score;
-      }
-
-      state.cls = cls;
-      state.students = students || [];
-      state.homeworks = homeworks || [];
-      state.hwStatus = hwStatus;
-      state.rubricScores = rubricScores;
-      state.rubrics = rubrics;
-      state.quizzes = quizzes || [];
-      state.perfTasks = perfTasks || [];
-      state.quizScores = quizScores;
-      state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
-      state.loading = false;
-      render();
-    }
-
-    function assignedCount() {
-      const today = todayStr();
-      return state.homeworks.filter(h => h.hw_date && h.hw_date <= today).length;
-    }
-    function completedCount(studentId) {
-      const today = todayStr();
-      const st = state.hwStatus[studentId] || {};
-      let n = 0;
-      for (const h of state.homeworks) {
-        if (h.hw_date && h.hw_date <= today && st[h.slot_no]) n++;
-      }
-      return n;
-    }
-    function pct(studentId) {
-      const a = assignedCount();
-      if (a === 0) return 0;
-      return Math.round((completedCount(studentId) / a) * 100);
-    }
-    function rubricTotal(studentId, level) {
-      const crit = state.rubrics[level] || [];
-      const scores = (state.rubricScores[studentId] || {})[level] || {};
-      let sum = 0, max = 0, any = false;
-      crit.forEach((c, i) => {
-        max += c.max;
-        if (scores[i] != null) { sum += scores[i]; any = true; }
-      });
-      return { sum, max, grade: any ? Math.round(sum / max * 100) : null };
-    }
-    function studentById(id) { return state.students.find(s => s.id === id); }
-
-    async function toggleHw(studentId, slotNo) {
-      const cur = !!(state.hwStatus[studentId] || {})[slotNo];
-      const next = !cur;
-      state.hwStatus[studentId] = state.hwStatus[studentId] || {};
-      state.hwStatus[studentId][slotNo] = next;
-      render();
-      await sb.from('homework_status').upsert({ student_id: studentId, slot_no: slotNo, done: next });
-    }
-    async function updateStudentField(studentId, field, value) {
-      const s = studentById(studentId);
-      if (s) s[field] = value;
-      await sb.from('students').update({ [field]: value }).eq('id', studentId);
-      showToast('Kaydedildi');
-    }
-    async function addPerfTask(label) {
-      const maxSlot = Math.max(0, ...state.perfTasks.map(t => t.slot_no || 0));
-      const { data } = await sb.from('performance_tasks').insert({ class_name: state.cls, slot_no: maxSlot + 1, label }).select();
-      if (data && data[0]) state.perfTasks.push(data[0]);
-      state.rubricLevel = label;
-      state.view = 'rubric';
-      render();
-      showToast('Performans gorevi eklendi');
-    }
-    async function renamePerfTask(oldLabel, newLabel) {
-      newLabel = newLabel.trim();
-      if (!newLabel || newLabel === oldLabel) return;
-      const t = state.perfTasks.find(x => x.label === oldLabel);
-      if (t) t.label = newLabel;
-      if (state.rubrics[oldLabel]) { state.rubrics[newLabel] = state.rubrics[oldLabel]; delete state.rubrics[oldLabel]; }
-      for (const sid in state.rubricScores) {
-        if (state.rubricScores[sid][oldLabel]) {
-          state.rubricScores[sid][newLabel] = state.rubricScores[sid][oldLabel];
-          delete state.rubricScores[sid][oldLabel];
-        }
-      }
-      state.rubricLevel = newLabel;
-      render();
-      await sb.from('performance_tasks').update({ label: newLabel }).eq('class_name', state.cls).eq('label', oldLabel);
-      await sb.from('rubrics').update({ level: newLabel }).eq('class_name', state.cls).eq('level', oldLabel);
-      const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
-      const ids = (students || []).map(s => s.id);
-      if (ids.length) {
-        await sb.from('rubric_scores').update({ level: newLabel }).eq('level', oldLabel).in('student_id', ids);
-      }
-      showToast('Isim guncellendi');
-    }
-    async function deletePerfTask(label) {
-      state.perfTasks = state.perfTasks.filter(t => t.label !== label);
-      delete state.rubrics[label];
-      for (const sid in state.rubricScores) { delete state.rubricScores[sid][label]; }
-      state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
-      state.view = 'roster';
-      render();
-      await sb.from('performance_tasks').delete().eq('class_name', state.cls).eq('label', label);
-      await sb.from('rubrics').delete().eq('class_name', state.cls).eq('level', label);
-      const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
-      const ids = (students || []).map(s => s.id);
-      if (ids.length) {
-        await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
-      }
-      showToast('Performans gorevi silindi');
-    }
-
-    async function addQuiz() {
-      const label = prompt('Yeni quiz adi (orn. Quiz 3):');
-      if (!label || !label.trim()) return;
-      const maxSlot = Math.max(0, ...state.quizzes.map(q => q.slot_no || 0));
-      const { data } = await sb.from('quizzes').insert({ class_name: state.cls, slot_no: maxSlot + 1, label: label.trim() }).select();
-      if (data && data[0]) state.quizzes.push(data[0]);
-      render();
-      showToast('Quiz eklendi');
-    }
-    async function renameQuiz(slotNo, label) {
-      const q = state.quizzes.find(x => x.slot_no === slotNo);
-      if (q) q.label = label;
-      await sb.from('quizzes').update({ label }).eq('class_name', state.cls).eq('slot_no', slotNo);
-    }
-    async function deleteQuiz(slotNo) {
-      if (!confirm('Bu quiz silinsin mi? Ogrencilerin bu quize ait notlari da silinir.')) return;
-      state.quizzes = state.quizzes.filter(q => q.slot_no !== slotNo);
-      render();
-      const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
-      const ids = (students || []).map(s => s.id);
-      if (ids.length) {
-        await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
-      }
-      await sb.from('quizzes').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
-      showToast('Quiz silindi');
-    }
-    async function updateQuizScore(studentId, slotNo, value) {
-      state.quizScores[studentId] = state.quizScores[studentId] || {};
-      state.quizScores[studentId][slotNo] = value;
-      await sb.from('quiz_scores').upsert({ student_id: studentId, slot_no: slotNo, score: value });
-      showToast('Kaydedildi');
-    }
-
-    async function saveRubric(level) {
-      const criteria = state.rubrics[level] || [];
-      await sb.from('rubrics').upsert({ class_name: state.cls, level, criteria }, { onConflict: 'class_name,level' });
-    }
-    function addCriterion(level) {
-      state.rubrics[level] = state.rubrics[level] || [];
-      state.rubrics[level].push({
-        name: 'Yeni Olcut', max: 4, levels: [
-          { score: 4, label: 'Mukemmel', desc: '' },
-          { score: 3, label: 'Iyi', desc: '' },
-          { score: 2, label: 'Orta', desc: '' },
-          { score: 1, label: 'Gelistirilmesi Gerekir', desc: '' },
-        ]
-      });
-      saveRubric(level);
-      render();
-    }
-    function deleteCriterion(level, ci) {
-      if (!confirm('Bu olcut silinsin mi?')) return;
-      state.rubrics[level].splice(ci, 1);
-      saveRubric(level);
-      render();
-    }
-    function updateCriterion(level, ci, field, value) {
-      state.rubrics[level][ci][field] = field === 'max' ? (parseInt(value) || 1) : value;
-      saveRubric(level);
-    }
-    function addLevel(level, ci) {
-      const c = state.rubrics[level][ci];
-      c.levels = c.levels || [];
-      c.levels.push({ score: 1, label: 'Yeni Seviye', desc: '' });
-      saveRubric(level);
-      render();
-    }
-    function deleteLevel(level, ci, li) {
-      state.rubrics[level][ci].levels.splice(li, 1);
-      saveRubric(level);
-      render();
-    }
-    function updateLevel(level, ci, li, field, value) {
-      const lv = state.rubrics[level][ci].levels[li];
-      lv[field] = field === 'score' ? (parseInt(value) || 0) : value;
-      saveRubric(level);
-    }
-
-    async function setRubricScore(studentId, level, critIndex, score) {
-      state.rubricScores[studentId] = state.rubricScores[studentId] || {};
-      state.rubricScores[studentId][level] = state.rubricScores[studentId][level] || {};
-      state.rubricScores[studentId][level][critIndex] = score;
-      render();
-      await sb.from('rubric_scores').upsert({ student_id: studentId, level, criteria_index: critIndex, score });
-      showToast('Puan kaydedildi');
-    }
-    async function updateHomework(slotNo, field, value) {
-      const hw = state.homeworks.find(h => h.slot_no === slotNo);
-      if (hw) hw[field] = value;
-      await sb.from('homeworks').update({ [field]: value }).eq('class_name', state.cls).eq('slot_no', slotNo);
-    }
-    async function addHomework() {
-      const maxSlot = Math.max(0, ...state.homeworks.map(h => h.slot_no || 0));
-      const nextSlot = maxSlot + 1;
-      const { data } = await sb.from('homeworks').insert({ class_name: state.cls, slot_no: nextSlot, topic: '', hw_date: null }).select();
-      if (data && data[0]) state.homeworks.push(data[0]);
-      render();
-      showToast('Odev eklendi');
-    }
-    async function deleteHomework(slotNo) {
-      state.homeworks = state.homeworks.filter(h => h.slot_no !== slotNo);
-      render();
-      const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
-      const ids = (students || []).map(s => s.id);
-      if (ids.length) {
-        await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
-      }
-      await sb.from('homeworks').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
-      showToast('Odev silindi');
-    }
-    async function addStudent(name) {
-      const maxOrder = Math.max(0, ...state.students.map(s => s.sort_order || 0));
-      const { data } = await sb.from('students').insert({ class_name: state.cls, name, sort_order: maxOrder + 1 }).select();
-      if (data && data[0]) state.students.push(data[0]);
-      render();
-      showToast('Ogrenci eklendi');
-    }
-    async function importStudentsFromExcel(file) {
-      showToast('Excel okunuyor...');
-      try {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (!rows.length) { showToast('Excel dosyasi bos'); return; }
-
-        const norm = h => String(h || '').trim().toLocaleLowerCase('tr-TR')
-          .replace(/ı/g, 'i').replace(/İ/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-          .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/\s+/g, '');
-
-        let keys = Object.keys(rows[0]);
-        let noKey = keys.find(k => ['no', 'numara', 'ogrencino'].includes(norm(k)));
-        let nameKey = keys.find(k => ['adsoyad', 'isim', 'ad', 'name', 'ogrenciadi', 'adisoyadi'].includes(norm(k)));
-
-        // Fallback: single-column sheet with no recognizable header -> every cell is a name
-        if (!nameKey && keys.length === 1) {
-          rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }).map(r => ({ __name: r[0] }));
-          nameKey = '__name';
-        }
-
-        if (!nameKey) {
-          showToast('Isim sutunu bulunamadi ("Ad Soyad" basligi gerekli)');
-          return;
-        }
-
-        const existingNames = new Set(state.students.map(s => s.name.trim().toLocaleLowerCase('tr-TR')));
-        let maxOrder = Math.max(0, ...state.students.map(s => s.sort_order || 0));
-
-        const toInsert = [];
-        for (const row of rows) {
-          const name = String(row[nameKey] || '').trim();
-          if (!name) continue;
-          if (existingNames.has(name.toLocaleLowerCase('tr-TR'))) continue;
-          maxOrder++;
-          const rec = { class_name: state.cls, name, sort_order: maxOrder };
-          if (noKey) rec.no = String(row[noKey] || '').trim();
-          toInsert.push(rec);
-          existingNames.add(name.toLocaleLowerCase('tr-TR'));
-        }
-
-        if (!toInsert.length) {
-          showToast('Eklenecek yeni ogrenci bulunamadi');
-          return;
-        }
-
-        const { data, error } = await sb.from('students').insert(toInsert).select();
-        if (error) { console.error(error); showToast('Ogrenciler eklenirken hata olustu'); return; }
-        state.students.push(...(data || []));
-        render();
-        showToast(toInsert.length + ' ogrenci eklendi');
-      } catch (err) {
-        console.error(err);
-        showToast('Dosya okunamadi, formati kontrol edin');
-      }
-    }
-    async function renameStudent(studentId, newName) {
-      const s = studentById(studentId);
-      if (s) s.name = newName;
-      render();
-      await sb.from('students').update({ name: newName }).eq('id', studentId);
-      showToast('Isim guncellendi');
-    }
-    async function deleteStudent(studentId) {
-      state.students = state.students.filter(s => s.id !== studentId);
-      delete state.hwStatus[studentId];
-      delete state.rubricScores[studentId];
-      state.view = 'roster';
-      render();
-      await sb.from('students').delete().eq('id', studentId);
-      showToast('Ogrenci silindi');
-    }
-
-    async function exportBackup() {
-      showToast('Yedek hazirlaniyor...');
-      const [c, s, h, hs, r, rs] = await Promise.all([
-        sb.from('classes').select('*'),
-        sb.from('students').select('*'),
-        sb.from('homeworks').select('*'),
-        sb.from('homework_status').select('*'),
-        sb.from('rubrics').select('*'),
-        sb.from('rubric_scores').select('*'),
-      ]);
-      const backup = {
-        exported_at: new Date().toISOString(),
-        classes: c.data || [], students: s.data || [], homeworks: h.data || [],
-        homework_status: hs.data || [], rubrics: r.data || [], rubric_scores: rs.data || [],
-      };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const stamp = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = 'takip-yedek-' + stamp + '.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Yedek indirildi');
-    }
-
-    function exportCSV() {
-      if (!state.cls || !state.students.length) {
-        showToast('Disa aktarilacak ogrenci yok');
-        return;
-      }
-      let csv = '\uFEFF';
-      let headers = ['No', 'Ad Soyad', 'Durum'];
-      state.quizzes.forEach(q => headers.push(q.label));
-      state.perfTasks.forEach(t => headers.push(t.label));
-      headers.push('Odev Durumu (%)');
-      headers.push('Ogretmen Notu');
-      csv += headers.join(';') + '\n';
-
-      const sorted = [...state.students].sort((a, b) => {
-        const na = parseInt(a.no), nb = parseInt(b.no);
-        const va = isNaN(na) ? Infinity : na;
-        const vb = isNaN(nb) ? Infinity : nb;
-        if (va !== vb) return va - vb;
-        return a.name.localeCompare(b.name, 'tr');
-      });
-
-      sorted.forEach(s => {
-        let row = [];
-        row.push(s.no || '');
-        row.push(s.name || '');
-        row.push(s.absent ? 'Okulda Yok' : 'Aktif');
-        state.quizzes.forEach(q => {
-          let val = (state.quizScores[s.id] || {})[q.slot_no] || '';
-          row.push(val);
-        });
-        state.perfTasks.forEach(t => {
-          let total = rubricTotal(s.id, t.label);
-          row.push(total.grade != null ? total.grade : '');
-        });
-        row.push(pct(s.id));
-        let note = s.teacher_note || '';
-        note = note.replace(/"/g, '""');
-        if (note.includes(';') || note.includes('\n') || note.includes('"')) {
-          note = '"' + note + '"';
-        }
-        row.push(note);
-        csv += row.join(';') + '\n';
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const stamp = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = state.cls + '_Notlar_' + stamp + '.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Excel (CSV) indirildi');
-    }
-
-    function render() {
-      renderClassbar();
-      renderTopbar();
-      if (state.loading) {
-        $app.innerHTML = '<div class="loading"><div class="spin"></div>Yukleniyor...</div>';
-        return;
-      }
-      if (!state.cls) {
-        $app.innerHTML = '<div class="empty"><div class="big">&#127891;</div>Henuz sinif yok.<br>Ustteki "+ Sinif" ile ilk sinifini ekle.</div>';
-        return;
-      }
-      if (state.view === 'roster') renderRoster();
-      else if (state.view === 'student') renderStudent();
-      else if (state.view === 'homeworks') renderHomeworks();
-      else if (state.view === 'quick_hw') renderQuickHw();
-      else if (state.view === 'quizzes') renderQuizzes();
-      else if (state.view === 'rubric') renderRubric();
-    }
-
-    function renderClassbar() {
-      $classbar.innerHTML = state.classes.map(c =>
-        '<button class="' + (c.name === state.cls && state.view === 'roster' ? 'active' : '') + '" data-cls="' + c.name + '">' + c.name + '</button>'
-      ).join('') + '<button data-add="1" style="background:rgba(255,255,255,.3)">+ Sinif</button>';
-      $classbar.querySelectorAll('button[data-cls]').forEach(b => {
-        b.onclick = () => { state.view = 'roster'; loadClass(b.dataset.cls); };
-      });
-      const addBtn = $classbar.querySelector('button[data-add]');
-      if (addBtn) addBtn.onclick = () => {
-        const name = prompt('Yeni sinif adi (orn. 11A):');
-        if (name && name.trim()) addClass(name.trim());
-      };
-    }
-
-    function renderTopbar() {
-      if (!state.cls) {
-        $backBtn.style.visibility = 'hidden';
-        $topTitle.textContent = '2. Donem Takip';
-        $topSub.textContent = '';
-        return;
-      }
-      if (state.view === 'roster') {
-        $backBtn.style.visibility = 'hidden';
-        $topTitle.textContent = state.cls + ' Subesi';
-        $topSub.textContent = state.students.length + ' ogrenci';
-      } else if (state.view === 'student') {
-        $backBtn.style.visibility = 'visible';
-        const s = studentById(state.currentStudentId);
-        $topTitle.textContent = s ? s.name : '';
-        $topSub.textContent = state.cls;
-      } else if (state.view === 'homeworks') {
-        $backBtn.style.visibility = 'visible';
-        $topTitle.textContent = 'Odev Tanimlama';
-        $topSub.textContent = state.cls;
-      } else if (state.view === 'quick_hw') {
-        $backBtn.style.visibility = 'visible';
-        const hw = state.homeworks.find(h => h.slot_no === state.activeHwSlot);
-        $topTitle.textContent = 'Hızlı Ödev Kontrolü';
-        $topSub.textContent = hw ? (hw.topic || ('Ödev #' + hw.slot_no)) : state.cls;
-      } else if (state.view === 'quizzes') {
-        $backBtn.style.visibility = 'visible';
-        $topTitle.textContent = 'Quiz Yonetimi';
-        $topSub.textContent = state.cls;
-      } else if (state.view === 'rubric') {
-        $backBtn.style.visibility = 'visible';
-        $topTitle.textContent = 'Performans Rubrigi';
-        $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
-      }
-    }
-    $backBtn.onclick = () => {
-      if (state.view === 'quick_hw') state.view = 'homeworks';
-      else state.view = 'roster';
+function renderQuizzes(){
+  removeFab();
+  const rows = state.quizzes.map(q=>
+    '<div class="rowline">' +
+      '<div class="slot">#'+q.slot_no+'</div>' +
+      '<input type="text" placeholder="Quiz adi" value="'+escapeHtml(q.label||'')+'" data-slot="'+q.slot_no+'" style="flex:1;">' +
+      '<button data-notes="'+q.slot_no+'" style="border:1px solid var(--navy); background:var(--navy-soft); color:var(--navy); padding:6px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Not Gir</button>' +
+      '<button data-del="'+q.slot_no+'" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster4">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="card">'+(rows||'<div class="empty">Henuz quiz yok.</div>')+'</div>' +
+    '<button id="addQuizBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Quiz Ekle</button>';
+  document.getElementById('toRoster4').onclick = ()=>{ state.view='roster'; render(); };
+  document.getElementById('addQuizBtn').onclick = addQuiz;
+  $app.querySelectorAll('input[data-slot]').forEach(inp=>{
+    inp.onblur = ()=> renameQuiz(parseInt(inp.dataset.slot), inp.value);
+  });
+  $app.querySelectorAll('button[data-notes]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.activeQuizSlot = parseInt(btn.dataset.notes);
+      state.view = 'quick_quiz';
       render();
     };
+  });
+  $app.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
+  });
+}
 
-    function renderRoster() {
-      const a = assignedCount();
-      $app.innerHTML =
-        '<div class="infobar">' +
-        '<div>Bugune kadar verilen odev: <b class="num">' + a + '</b> / ' + state.homeworks.length + '</div>' +
-        '<div><a class="linklike" id="hwLink">Odevleri duzenle &rsaquo;</a></div>' +
-        '</div>' +
-        '<div style="margin:-6px 0 14px; font-size:12.5px;">' +
-        '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
-        '</div>' +
-        '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
-        '<div style="display:flex; gap:6px; margin-bottom:10px;">' +
-        '<button id="sortNo" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:' + (state.sortBy === 'no' ? 'var(--navy)' : 'var(--navy-soft)') + '; color:' + (state.sortBy === 'no' ? '#fff' : 'var(--navy)') + ';">Numaraya gore</button>' +
-        '<button id="sortName" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:' + (state.sortBy === 'name' ? 'var(--navy)' : 'var(--navy-soft)') + '; color:' + (state.sortBy === 'name' ? '#fff' : 'var(--navy)') + ';">Isme gore</button>' +
-        '</div>' +
-        '<div id="rosterList"></div>' +
-        '<div class="sectiontitle" style="margin-top:26px;"><span>Rubrikler</span><span class="line"></span></div>' +
-        '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
-        state.perfTasks.map(t => '<button class="levelpicker-btn" data-lvl="' + escapeHtml(t.label) + '" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">' + escapeHtml(t.label) + '</button>').join('') +
-        (state.perfTasks.length === 0 ? '<div class="empty" style="width:100%;">Henuz performans gorevi yok.</div>' : '') +
-        '</div>' +
-        '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Gorevi Ekle</button>' +
-        '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
-        '<div class="card" style="display:flex; gap:10px;">' +
-        '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
-        '<button id="deleteClsBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinifi Sil</button>' +
-        '</div>' +
-        '<div class="sectiontitle" style="margin-top:26px;"><span>Veri</span><span class="line"></span></div>' +
-        '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
-        '<button id="excelUploadBtn" style="flex:1; min-width:110px; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128228; Excel Yukle</button>' +
-        '<button id="excelLink" style="flex:1; min-width:110px; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128202; Excel Indir</button>' +
-        '<button id="backupLink" style="flex:1; min-width:110px; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;">&#128190; Yedekle</button>' +
-        '</div>' +
-        '<input type="file" id="excelUpload" accept=".xlsx,.xls,.csv" style="display:none">';
-      document.getElementById('hwLink').onclick = () => { state.view = 'homeworks'; render(); };
-      document.getElementById('quizLink').onclick = () => { state.view = 'quizzes'; render(); };
-      document.getElementById('backupLink').onclick = exportBackup;
-      document.getElementById('excelLink').onclick = exportCSV;
-      document.getElementById('excelUploadBtn').onclick = () => document.getElementById('excelUpload').click();
-      document.getElementById('excelUpload').onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) importStudentsFromExcel(file);
-        e.target.value = '';
-      };
-      document.getElementById('addPerfBtn2').onclick = () => {
-        const label = prompt('Yeni performans gorevinin adi (orn. Performans 4):');
-        if (label && label.trim()) addPerfTask(label.trim());
-      };
-      document.getElementById('renameClsBtn').onclick = () => {
-        const nn = prompt('Yeni sinif adi:', state.cls);
-        if (nn && nn.trim() && nn.trim() !== state.cls) renameClass(state.cls, nn.trim());
-      };
-      document.getElementById('deleteClsBtn').onclick = () => {
-        if (confirm(state.cls + ' sinifi ve tum ogrenci/odev/rubrik verileri kalici olarak silinsin mi?')) {
-          deleteClass(state.cls);
-        }
-      };
-      $app.querySelectorAll('.levelpicker-btn').forEach(b => {
-        b.onclick = () => { state.rubricLevel = b.dataset.lvl; state.view = 'rubric'; state.currentStudentId = state.students[0] ? state.students[0].id : null; render(); };
-      });
+function renderQuickQuiz(){
+  removeFab();
+  const slotNo = state.activeQuizSlot;
+  const q = state.quizzes.find(x=>x.slot_no===slotNo);
+  if(!q){ state.view='quizzes'; return render(); }
 
-      document.getElementById('sortNo').onclick = () => { state.sortBy = 'no'; render(); };
-      document.getElementById('sortName').onclick = () => { state.sortBy = 'name'; render(); };
+  const sorted = [...state.students].sort((a,b)=>{
+    const na = parseInt(a.no), nb = parseInt(b.no);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va!==vb) return va-vb;
+    return a.name.localeCompare(b.name,'tr');
+  });
 
-      const list = document.getElementById('rosterList');
-      if (!state.students.length) {
-        list.innerHTML = '<div class="empty"><div class="big">&#128118;</div>Henuz ogrenci yok.<br>Sag alttaki + ile ekleyebilirsin.</div>';
-      } else {
-        const sorted = [...state.students].sort((a, b) => {
-          if (state.sortBy === 'name') {
-            return a.name.localeCompare(b.name, 'tr');
-          }
-          const na = parseInt(a.no), nb = parseInt(b.no);
-          const va = isNaN(na) ? Infinity : na;
-          const vb = isNaN(nb) ? Infinity : nb;
-          if (va !== vb) return va - vb;
-          return a.name.localeCompare(b.name, 'tr');
-        });
-        list.innerHTML = sorted.map(s => {
-          const p = pct(s.id);
-          const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:8px;">Okulda Yok</span>' : '';
-          return '<div class="card studentcard" data-id="' + s.id + '">' +
-            '<div class="no">' + (s.no || '') + '</div>' +
-            '<div class="name">' + absentTag + escapeHtml(s.name) + '</div>' +
-            '<div class="pct ' + (p < 60 ? 'low' : '') + ' num">' + p + '%</div>' +
-            '<div class="chev">&rsaquo;</div>' +
-            '</div>';
-        }).join('');
-        list.querySelectorAll('.studentcard').forEach(el => {
-          el.onclick = () => { state.currentStudentId = el.dataset.id; state.view = 'student'; render(); };
-        });
-      }
-      ensureFab('+', () => {
-        const name = prompt('Yeni ogrencinin adi soyadi:');
-        if (name && name.trim()) addStudent(name.trim());
-      });
-    }
+  const listHtml = sorted.map(s=>{
+    const val = (state.quizScores[s.id]||{})[slotNo] || '';
+    const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:6px;">Yok</span>' : '';
+    return '<div class="card" style="display:flex; align-items:center; gap:10px;">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name" style="flex:1; font-size:15px; font-weight:600;">'+absentTag+escapeHtml(s.name)+'</div>' +
+      '<input type="text" inputmode="decimal" placeholder="-" data-quick-quiz-id="'+s.id+'" value="'+escapeHtml(val)+'" style="width:64px; border:1px solid var(--line); border-radius:8px; padding:9px; font-size:15px; font-weight:700; text-align:center; font-family:inherit;">' +
+    '</div>';
+  }).join('');
 
-    function renderStudent() {
-      removeFab();
-      const s = studentById(state.currentStudentId);
-      if (!s) { state.view = 'roster'; return render(); }
-      const today = todayStr();
+  $app.innerHTML =
+    '<a class="backlink" id="toQuizList">&lsaquo; Quiz listesine dön</a>' +
+    '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:16px;">' +
+      '<div><b>'+escapeHtml(q.label)+'</b><div style="font-size:12px; opacity:0.8;">Not girmek istediğin öğrencinin kutucuğuna dokun</div></div>' +
+    '</div>' +
+    (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>');
 
-      let quizSum = 0, quizCount = 0;
-      state.quizzes.forEach(q => {
-        const val = parseFloat((state.quizScores[s.id] || {})[q.slot_no]);
-        if (!isNaN(val)) { quizSum += val; quizCount++; }
-      });
-      const quizAvg = quizCount > 0 ? Math.round(quizSum / quizCount) : '-';
+  document.getElementById('toQuizList').onclick = ()=>{ state.view='quizzes'; render(); };
+  $app.querySelectorAll('[data-quick-quiz-id]').forEach(inp=>{
+    inp.onblur = ()=> updateQuizScore(inp.dataset.quickQuizId, slotNo, inp.value);
+  });
+}
 
-      let perfSum = 0, perfCount = 0;
-      state.perfTasks.forEach(t => {
-        const total = rubricTotal(s.id, t.label);
-        if (total.grade != null) { perfSum += total.grade; perfCount++; }
-      });
-      const perfAvg = perfCount > 0 ? Math.round(perfSum / perfCount) : '-';
+function renderRubric(){
+  removeFab();
+  const level = state.rubricLevel;
+  const crit = state.rubrics[level] || [];
+  const sid = state.currentStudentId;
+  const totals = sid ? rubricTotal(sid, level) : {sum:0,max:0,grade:null};
 
-      const hwPct = pct(s.id);
+  const topControls =
+    '<a class="backlink" id="toRoster3">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div class="levelpicker">' +
+      state.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
+      '<button id="editToggle" style="background:'+(state.rubricEdit?'var(--accent)':'var(--navy-soft)')+'; color:'+(state.rubricEdit?'#fff':'var(--navy)')+';">'+(state.rubricEdit?'Bitti':'Olcutleri Duzenle')+'</button>' +
+    '</div>' +
+    (state.rubricEdit && level ?
+      '<div style="display:flex; gap:8px; margin-bottom:16px;">' +
+        '<button id="renamePerfBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Yeniden Adlandir</button>' +
+        '<button id="deletePerfBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Sil</button>' +
+      '</div>' : '');
 
-      const hwRows = state.homeworks.map(h => {
-        const future = !h.hw_date || h.hw_date > today;
-        const done = !!(state.hwStatus[s.id] || {})[h.slot_no];
-        const topic = h.topic || ('(Odev ' + h.slot_no + ' tanimlanmadi)');
-        return '<div class="hwrow ' + (future ? 'future' : '') + '">' +
-          '<div class="topic">' +
-          '<div class="t">' + escapeHtml(topic) + '</div>' +
-          '<div class="d">' + (h.hw_date ? fmtDate(h.hw_date) : 'Tarih girilmedi') + '</div>' +
+  if(state.rubricEdit){
+    const critEdit = crit.map((c,ci)=>{
+      const levels = (c.levels||[]).map((lv,li)=>
+        '<div class="levelcard" style="cursor:default;">' +
+          '<div style="display:flex; gap:8px; margin-bottom:6px;">' +
+            '<input type="number" value="'+lv.score+'" data-ci="'+ci+'" data-li="'+li+'" data-f="score" style="width:56px; border:1px solid var(--line); border-radius:6px; padding:6px; font-weight:700;">' +
+            '<input type="text" value="'+escapeHtml(lv.label)+'" data-ci="'+ci+'" data-li="'+li+'" data-f="label" placeholder="Seviye adi" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:6px;">' +
+            '<button data-dellvl="'+ci+':'+li+'" style="border:none;background:none;color:#b3432f;font-size:18px;">&times;</button>' +
           '</div>' +
-          '<button class="toggle ' + (done ? 'on' : '') + '" data-slot="' + h.slot_no + '" ' + (future ? 'disabled style="opacity:.4"' : '') + '><span class="knob"></span></button>' +
-          '</div>';
-      }).join('');
-
-      const quizHtml = state.quizzes.map(q => {
-        const val = (state.quizScores[s.id] || {})[q.slot_no] || '';
-        return '<div class="field"><label>' + escapeHtml(q.label) + '</label><input type="text" data-quiz="' + q.slot_no + '" value="' + escapeHtml(val) + '"></div>';
-      }).join('');
-
-      const perfHtml = state.perfTasks.map(t => {
-        const total = rubricTotal(s.id, t.label);
-        return '<div class="field"><label>' + escapeHtml(t.label) + '</label><div class="num" style="font-size:16px;font-weight:700;color:var(--navy)">' + (total.grade ?? '-') + '</div></div>';
-      }).join('');
-
-      $app.innerHTML =
-        '<a class="backlink" id="toRoster">&lsaquo; ' + state.cls + ' listesine don</a>' +
-        '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">' +
-        '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Quiz Ort.</div><b class="num" style="font-size:18px;">' + quizAvg + '</b></div>' +
-        '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
-        '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Perf. Ort.</div><b class="num" style="font-size:18px;">' + perfAvg + '</b></div>' +
-        '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
-        '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Ödev Durumu</div><b class="num" style="font-size:18px;">%' + hwPct + '</b></div>' +
+          '<textarea data-ci="'+ci+'" data-li="'+li+'" data-f="desc" placeholder="Aciklama" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px;font-family:inherit;font-size:12.5px;min-height:40px;">'+escapeHtml(lv.desc||'')+'</textarea>' +
+        '</div>'
+      ).join('');
+      return '<div class="critblock">' +
+        '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">' +
+          '<input type="text" value="'+escapeHtml(c.name)+'" data-crit="'+ci+'" data-f="name" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:8px; font-weight:700;">' +
+          'Tam puan: <input type="number" value="'+c.max+'" data-crit="'+ci+'" data-f="max" style="width:50px; border:1px solid var(--line); border-radius:6px; padding:8px;">' +
+          '<button data-delcrit="'+ci+'" style="border:none;background:#fdecea;color:#b3432f;border-radius:6px;padding:6px 10px;font-weight:700;">Sil</button>' +
         '</div>' +
-        '<div class="sectiontitle"><span>Ogrenci Bilgisi</span><span class="line"></span></div>' +
-        '<div class="detail-grid">' +
-        '<div class="field"><label>No</label><input type="text" data-f="no" value="' + (s.no || '') + '"></div>' +
-        '</div>' +
-        '<div class="card" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">' +
-        '<div><b>Okulda Yok / Gelmedi</b><div style="font-size:12px; color:var(--ink-soft)">Bugün okulda değilse işaretleyin</div></div>' +
-        '<button class="toggle ' + (s.absent ? 'on' : '') + '" id="absentToggle"><span class="knob"></span></button>' +
-        '</div>' +
-        (state.quizzes.length ?
-          '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
-          '<div class="detail-grid">' + quizHtml + '</div>'
-          : '') +
-        (state.perfTasks.length ?
-          '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
-          '<div class="detail-grid">' + perfHtml + '</div>'
-          : '') +
-        '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
-        '<div class="card">' + hwRows + '</div>' +
-        '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
-        '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">' + (s.teacher_note || '') + '</textarea>' +
-        '<div class="sectiontitle" style="margin-top:26px;"><span>Ogrenci Islemleri</span><span class="line"></span></div>' +
-        '<div class="card" style="display:flex; gap:10px;">' +
-        '<button id="renameBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ismi Duzenle</button>' +
-        '<button id="deleteBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Ogrenciyi Sil</button>' +
-        '</div>';
+        levels +
+        '<button data-addlvl="'+ci+'" style="width:100%; border:1px dashed var(--line); background:#fff; color:var(--ink-soft); padding:8px; border-radius:8px; font-size:12.5px; margin-top:4px;">+ Seviye Ekle</button>' +
+      '</div>';
+    }).join('');
 
-      document.getElementById('absentToggle').onclick = async () => {
-        s.absent = !s.absent;
+    $app.innerHTML = topControls + critEdit +
+      '<button id="addCritBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin:10px 0 20px;">+ Yeni Olcut Ekle</button>';
+
+    document.getElementById('addCritBtn').onclick = ()=> addCriterion(level);
+    $app.querySelectorAll('[data-delcrit]').forEach(b=> b.onclick = ()=> deleteCriterion(level, parseInt(b.dataset.delcrit)));
+    $app.querySelectorAll('[data-addlvl]').forEach(b=> b.onclick = ()=> addLevel(level, parseInt(b.dataset.addlvl)));
+    $app.querySelectorAll('[data-dellvl]').forEach(b=>{
+      b.onclick = ()=>{ const [ci,li]=b.dataset.dellvl.split(':').map(Number); deleteLevel(level,ci,li); };
+    });
+    $app.querySelectorAll('input[data-crit]').forEach(inp=>{
+      inp.onblur = ()=> updateCriterion(level, parseInt(inp.dataset.crit), inp.dataset.f, inp.value);
+    });
+    $app.querySelectorAll('[data-ci][data-li]').forEach(inp=>{
+      inp.onblur = ()=> updateLevel(level, parseInt(inp.dataset.ci), parseInt(inp.dataset.li), inp.dataset.f, inp.value);
+    });
+  } else {
+    const summaryRows = state.students.map(s=>{
+      const t = rubricTotal(s.id, level);
+      const badge = t.grade!=null ? t.grade : '-';
+      const low = t.grade!=null && t.grade<60;
+      return '<div class="card studentcard" data-sumid="'+s.id+'" style="margin-bottom:6px;">' +
+        '<div class="name">'+escapeHtml(s.name)+'</div>' +
+        '<div class="pct '+(low?'low':'')+' num">'+badge+'</div>' +
+        '<div class="chev">&rsaquo;</div>' +
+      '</div>';
+    }).join('');
+
+    const studentButtons = state.students.map(s=>
+      '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
+    ).join('');
+    const critHtml = crit.map((c,ci)=>{
+      const curScore = sid ? ((state.rubricScores[sid]||{})[level]||{})[ci] : null;
+      const levels = (c.levels||[]).map(lv=>
+        '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
+          '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
+          '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
+      '</div>'
+      ).join('');
+      return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
+    }).join('');
+
+    $app.innerHTML = topControls +
+      (crit.length===0 ? '<div class="empty">Bu performans icin henuz olcut tanimlanmadi.<br>Yukaridaki "Olcutleri Duzenle" ile ekleyebilirsin.</div>' :
+      '<div class="sectiontitle"><span>Sinif Ozeti</span><span class="line"></span></div>' +
+      '<div id="summaryList">'+(summaryRows || '<div class="empty">Ogrenci yok.</div>')+'</div>' +
+      '<div class="sectiontitle" style="margin-top:24px;"><span>'+(sid ? 'Puanlama' : 'Puanlamak icin ogrenci sec')+'</span><span class="line"></span></div>' +
+      '<div class="studentpicker">'+studentButtons+'</div>' +
+      (sid ?
+        '<div class="rubricsummary">' +
+          '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
+          '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
+        '</div>' + critHtml
+        : ''));
+
+    $app.querySelectorAll('[data-sumid]').forEach(el=>{
+      el.onclick = ()=>{
+        state.currentStudentId = el.dataset.sumid;
         render();
-        await sb.from('students').update({ absent: s.absent }).eq('id', s.id);
-        showToast(s.absent ? 'Öğrenci okulda yok olarak işaretlendi' : 'Öğrenci aktif');
+        const target = document.getElementById('summaryList');
+        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+        const picker = $app.querySelector('.studentpicker');
+        if(picker) picker.scrollIntoView({behavior:'smooth', block:'center'});
       };
-      document.getElementById('renameBtn').onclick = () => {
-        const newName = prompt('Yeni ad soyad:', s.name);
-        if (newName && newName.trim() && newName.trim() !== s.name) renameStudent(s.id, newName.trim());
+    });
+
+    $app.querySelectorAll('.studentpicker button').forEach(b=>{
+      b.onclick = ()=>{ state.currentStudentId = b.dataset.id; render(); };
+    });
+    $app.querySelectorAll('.levelcard').forEach(el=>{
+      el.onclick = ()=>{
+        const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
+        const cur = ((state.rubricScores[sid]||{})[level]||{})[ci];
+        setRubricScore(sid, level, ci, cur===score ? null : score);
       };
-      document.getElementById('deleteBtn').onclick = () => {
-        if (confirm(s.name + ' silinsin mi? Bu islem geri alinamaz, tum odev ve rubrik verileri de silinir.')) {
-          deleteStudent(s.id);
-        }
-      };
-      document.getElementById('toRoster').onclick = () => { state.view = 'roster'; render(); };
-      $app.querySelectorAll('[data-quiz]').forEach(inp => {
-        inp.onblur = () => updateQuizScore(s.id, parseInt(inp.dataset.quiz), inp.value);
-      });
-      $app.querySelectorAll('.field input').forEach(inp => {
-        if (inp.dataset.quiz) return;
-        inp.onblur = () => updateStudentField(s.id, inp.dataset.f, inp.value);
-      });
-      $app.querySelectorAll('.toggle').forEach(btn => {
-        if (btn.id === 'absentToggle' || btn.disabled) return;
-        btn.onclick = () => toggleHw(s.id, parseInt(btn.dataset.slot));
-      });
-      const noteBox = document.getElementById('noteBox');
-      noteBox.onblur = () => updateStudentField(s.id, 'teacher_note', noteBox.value);
+    });
+  }
+
+  document.getElementById('toRoster3').onclick = ()=>{ state.view='roster'; render(); };
+  const renamePerfBtn = document.getElementById('renamePerfBtn');
+  if(renamePerfBtn) renamePerfBtn.onclick = ()=>{
+    const nn = prompt('Yeni ad:', level);
+    if(nn && nn.trim() && nn.trim()!==level) renamePerfTask(level, nn.trim());
+  };
+  const deletePerfBtn = document.getElementById('deletePerfBtn');
+  if(deletePerfBtn) deletePerfBtn.onclick = ()=>{
+    if(confirm('"'+level+'" silinsin mi? Bu gorevin tum olcutleri ve ogrenci puanlari da silinir.')){
+      deletePerfTask(level);
     }
+  };
+  $app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
+    b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
+  });
+  document.getElementById('editToggle').onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
+}
 
-    function renderHomeworks() {
-      removeFab();
-      const rows = state.homeworks.map(h =>
-        '<div class="rowline">' +
-        '<div class="slot">#' + h.slot_no + '</div>' +
-        '<input type="text" placeholder="Konu" value="' + escapeHtml(h.topic || '') + '" data-slot="' + h.slot_no + '" data-f="topic">' +
-        '<input type="date" value="' + (h.hw_date || '') + '" data-slot="' + h.slot_no + '" data-f="hw_date">' +
-        '<button data-check="' + h.slot_no + '" style="border:1px solid var(--navy); background:var(--navy-soft); color:var(--navy); padding:6px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Kontrol Et</button>' +
-        '<button data-del="' + h.slot_no + '" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
-        '</div>'
-      ).join('');
-      $app.innerHTML =
-        '<a class="backlink" id="toRoster2">&lsaquo; ' + state.cls + ' listesine don</a>' +
-        '<div class="card">' + (rows || '<div class="empty">Henuz odev yok.</div>') + '</div>' +
-        '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Odev Ekle</button>' +
-        '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">Ödevlerin yanındaki Kontrol Et butonuna basarak doğrudan sınıf listesinden hızlıca ödev işaretlemesi yapabilirsiniz.</p>';
-      document.getElementById('toRoster2').onclick = () => { state.view = 'roster'; render(); };
-      document.getElementById('addHwBtn').onclick = addHomework;
-      $app.querySelectorAll('input[data-f]').forEach(inp => {
-        inp.onblur = () => updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value || null);
-      });
-      $app.querySelectorAll('button[data-check]').forEach(btn => {
-        btn.onclick = () => {
-          state.activeHwSlot = parseInt(btn.dataset.check);
-          state.view = 'quick_hw';
-          render();
-        };
-      });
-      $app.querySelectorAll('button[data-del]').forEach(btn => {
-        btn.onclick = () => {
-          if (confirm('Bu odev silinsin mi? Ogrencilerin bu odeve ait isaretleri de silinir.')) {
-            deleteHomework(parseInt(btn.dataset.del));
-          }
-        };
-      });
+let fabEl = null;
+function ensureFab(label, onClick){
+  removeFab();
+  fabEl = document.createElement('button');
+  fabEl.className = 'fab';
+  fabEl.textContent = label;
+  fabEl.onclick = onClick;
+  document.body.appendChild(fabEl);
+}
+function removeFab(){
+  if(fabEl){ fabEl.remove(); fabEl=null; }
+}
+
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    await startApp();
+  } else {
+    renderLogin();
+  }
+  sb.auth.onAuthStateChange((event, newSession) => {
+    if(event === 'SIGNED_OUT'){
+      $logoutLink.style.display = 'none';
     }
-
-    function renderQuickHw() {
-      removeFab();
-      const slotNo = state.activeHwSlot;
-      const hw = state.homeworks.find(h => h.slot_no === slotNo);
-      if (!hw) { state.view = 'homeworks'; return render(); }
-
-      const sorted = [...state.students].sort((a, b) => {
-        const na = parseInt(a.no), nb = parseInt(b.no);
-        const va = isNaN(na) ? Infinity : na;
-        const vb = isNaN(nb) ? Infinity : nb;
-        if (va !== vb) return va - vb;
-        return a.name.localeCompare(b.name, 'tr');
-      });
-
-      const listHtml = sorted.map(s => {
-        const done = !!(state.hwStatus[s.id] || {})[slotNo];
-        const absentTag = s.absent ? '<span style="font-size:11px; background:#fdecea; color:#b3432f; padding:2px 6px; border-radius:6px; margin-right:8px;">Okulda Yok</span>' : '';
-        return '<div class="card studentcard" style="cursor:default;">' +
-          '<div class="no">' + (s.no || '') + '</div>' +
-          '<div class="name">' + absentTag + escapeHtml(s.name) + '</div>' +
-          '<button class="toggle ' + (done ? 'on' : '') + '" data-quick-slot="' + slotNo + '" data-quick-id="' + s.id + '"><span class="knob"></span></button>' +
-          '</div>';
-      }).join('');
-
-      $app.innerHTML =
-        '<a class="backlink" id="toHwList">&lsaquo; Ödev listesine dön</a>' +
-        '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:16px;">' +
-        '<div><b>' + escapeHtml(hw.topic || ('Ödev #' + hw.slot_no)) + '</b><div style="font-size:12px; opacity:0.8;">Tarih: ' + (hw.hw_date ? fmtDate(hw.hw_date) : 'Belirtilmemiş') + '</div></div>' +
-        '</div>' +
-        '<div class="sectiontitle"><span>Ödev Yapanlar (Tıklayıp İşaretleyin)</span><span class="line"></span></div>' +
-        (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>');
-
-      document.getElementById('toHwList').onclick = () => { state.view = 'homeworks'; render(); };
-      $app.querySelectorAll('[data-quick-slot]').forEach(btn => {
-        btn.onclick = async () => {
-          const sid = btn.dataset.quickId;
-          const sslot = parseInt(btn.dataset.quickSlot);
-          await toggleHw(sid, sslot);
-          renderQuickHw();
-        };
-      });
-    }
-
-    function renderQuizzes() {
-      removeFab();
-      const rows = state.quizzes.map(q =>
-        '<div class="rowline">' +
-        '<div class="slot">#' + q.slot_no + '</div>' +
-        '<input type="text" placeholder="Quiz adi" value="' + escapeHtml(q.label || '') + '" data-slot="' + q.slot_no + '" style="flex:1;">' +
-        '<button data-del="' + q.slot_no + '" style="border:none;background:none;color:#b3432f;font-size:20px;padding:4px 6px;">&times;</button>' +
-        '</div>'
-      ).join('');
-      $app.innerHTML =
-        '<a class="backlink" id="toRoster4">&lsaquo; ' + state.cls + ' listesine don</a>' +
-        '<div class="card">' + (rows || '<div class="empty">Henuz quiz yok.</div>') + '</div>' +
-        '<button id="addQuizBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Quiz Ekle</button>';
-      document.getElementById('toRoster4').onclick = () => { state.view = 'roster'; render(); };
-      document.getElementById('addQuizBtn').onclick = addQuiz;
-      $app.querySelectorAll('input[data-slot]').forEach(inp => {
-        inp.onblur = () => renameQuiz(parseInt(inp.dataset.slot), inp.value);
-      });
-      $app.querySelectorAll('button[data-del]').forEach(btn => {
-        btn.onclick = () => deleteQuiz(parseInt(btn.dataset.del));
-      });
-    }
-
-    function renderRubric() {
-      removeFab();
-      const level = state.rubricLevel;
-      const crit = state.rubrics[level] || [];
-      const sid = state.currentStudentId;
-      const totals = sid ? rubricTotal(sid, level) : { sum: 0, max: 0, grade: null };
-
-      const topControls =
-        '<a class="backlink" id="toRoster3">&lsaquo; ' + state.cls + ' listesine don</a>' +
-        '<div class="levelpicker">' +
-        state.perfTasks.map(t => '<button class="' + (t.label === level ? 'active' : '') + '" data-lvl="' + escapeHtml(t.label) + '">' + escapeHtml(t.label) + '</button>').join('') +
-        '<button id="editToggle" style="background:' + (state.rubricEdit ? 'var(--accent)' : 'var(--navy-soft)') + '; color:' + (state.rubricEdit ? '#fff' : 'var(--navy)') + ';">' + (state.rubricEdit ? 'Bitti' : 'Olcutleri Duzenle') + '</button>' +
-        '</div>' +
-        (state.rubricEdit && level ?
-          '<div style="display:flex; gap:8px; margin-bottom:16px;">' +
-          '<button id="renamePerfBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Yeniden Adlandir</button>' +
-          '<button id="deletePerfBtn" style="flex:1; border:none; background:#fdecea; color:#b3432f; padding:10px; border-radius:10px; font-weight:700; font-size:13px;">Bu Gorevi Sil</button>' +
-          '</div>' : '');
-
-      if (state.rubricEdit) {
-        const critEdit = crit.map((c, ci) => {
-          const levels = (c.levels || []).map((lv, li) =>
-            '<div class="levelcard" style="cursor:default;">' +
-            '<div style="display:flex; gap:8px; margin-bottom:6px;">' +
-            '<input type="number" value="' + lv.score + '" data-ci="' + ci + '" data-li="' + li + '" data-f="score" style="width:56px; border:1px solid var(--line); border-radius:6px; padding:6px; font-weight:700;">' +
-            '<input type="text" value="' + escapeHtml(lv.label) + '" data-ci="' + ci + '" data-li="' + li + '" data-f="label" placeholder="Seviye adi" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:6px;">' +
-            '<button data-dellvl="' + ci + ':' + li + '" style="border:none;background:none;color:#b3432f;font-size:18px;">&times;</button>' +
-            '</div>' +
-            '<textarea data-ci="' + ci + '" data-li="' + li + '" data-f="desc" placeholder="Aciklama" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px;font-family:inherit;font-size:12.5px;min-height:40px;">' + escapeHtml(lv.desc || '') + '</textarea>' +
-            '</div>'
-          ).join('');
-          return '<div class="critblock">' +
-            '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">' +
-            '<input type="text" value="' + escapeHtml(c.name) + '" data-crit="' + ci + '" data-f="name" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:8px; font-weight:700;">' +
-            'Tam puan: <input type="number" value="' + c.max + '" data-crit="' + ci + '" data-f="max" style="width:50px; border:1px solid var(--line); border-radius:6px; padding:8px;">' +
-            '<button data-delcrit="' + ci + '" style="border:none;background:#fdecea;color:#b3432f;border-radius:6px;padding:6px 10px;font-weight:700;">Sil</button>' +
-            '</div>' +
-            levels +
-            '<button data-addlvl="' + ci + '" style="width:100%; border:1px dashed var(--line); background:#fff; color:var(--ink-soft); padding:8px; border-radius:8px; font-size:12.5px; margin-top:4px;">+ Seviye Ekle</button>' +
-            '</div>';
-        }).join('');
-
-        $app.innerHTML = topControls + critEdit +
-          '<button id="addCritBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin:10px 0 20px;">+ Yeni Olcut Ekle</button>';
-
-        document.getElementById('addCritBtn').onclick = () => addCriterion(level);
-        $app.querySelectorAll('[data-delcrit]').forEach(b => b.onclick = () => deleteCriterion(level, parseInt(b.dataset.delcrit)));
-        $app.querySelectorAll('[data-addlvl]').forEach(b => b.onclick = () => addLevel(level, parseInt(b.dataset.addlvl)));
-        $app.querySelectorAll('[data-dellvl]').forEach(b => {
-          b.onclick = () => { const [ci, li] = b.dataset.dellvl.split(':').map(Number); deleteLevel(level, ci, li); };
-        });
-        $app.querySelectorAll('input[data-crit]').forEach(inp => {
-          inp.onblur = () => updateCriterion(level, parseInt(inp.dataset.crit), inp.dataset.f, inp.value);
-        });
-        $app.querySelectorAll('[data-ci][data-li]').forEach(inp => {
-          inp.onblur = () => updateLevel(level, parseInt(inp.dataset.ci), parseInt(inp.dataset.li), inp.dataset.f, inp.value);
-        });
-      } else {
-        const summaryRows = state.students.map(s => {
-          const t = rubricTotal(s.id, level);
-          const badge = t.grade != null ? t.grade : '-';
-          const low = t.grade != null && t.grade < 60;
-          return '<div class="card studentcard" data-sumid="' + s.id + '" style="margin-bottom:6px;">' +
-            '<div class="name">' + escapeHtml(s.name) + '</div>' +
-            '<div class="pct ' + (low ? 'low' : '') + ' num">' + badge + '</div>' +
-            '<div class="chev">&rsaquo;</div>' +
-            '</div>';
-        }).join('');
-
-        const studentButtons = state.students.map(s =>
-          '<button class="' + (s.id === sid ? 'active' : '') + '" data-id="' + s.id + '">' + escapeHtml(s.name) + '</button>'
-        ).join('');
-        const critHtml = crit.map((c, ci) => {
-          const curScore = sid ? ((state.rubricScores[sid] || {})[level] || {})[ci] : null;
-          const levels = (c.levels || []).map(lv =>
-            '<div class="levelcard ' + (curScore === lv.score ? 'sel' : '') + '" data-ci="' + ci + '" data-score="' + lv.score + '">' +
-            '<div class="lh"><span>' + escapeHtml(lv.label) + '</span><span class="score">' + lv.score + ' puan</span></div>' +
-            '<div class="desc">' + escapeHtml(lv.desc) + '</div>' +
-            '</div>'
-          ).join('');
-          return '<div class="critblock"><h3>' + escapeHtml(c.name) + ' <span class="max">(tam puan: ' + c.max + ')</span></h3>' + levels + '</div>';
-        }).join('');
-
-        $app.innerHTML = topControls +
-          (crit.length === 0 ? '<div class="empty">Bu performans icin henuz olcut tanimlanmadi.<br>Yukaridaki "Olcutleri Duzenle" ile ekleyebilirsin.</div>' :
-            '<div class="sectiontitle"><span>Sinif Ozeti</span><span class="line"></span></div>' +
-            '<div id="summaryList">' + (summaryRows || '<div class="empty">Ogrenci yok.</div>') + '</div>' +
-            '<div class="sectiontitle" style="margin-top:24px;"><span>' + (sid ? 'Puanlama' : 'Puanlamak icin ogrenci sec') + '</span><span class="line"></span></div>' +
-            '<div class="studentpicker">' + studentButtons + '</div>' +
-            (sid ?
-              '<div class="rubricsummary">' +
-              '<div><div class="lbl">Toplam</div><div class="num">' + totals.sum + ' / ' + totals.max + '</div></div>' +
-              '<div><div class="lbl">Not</div><div class="num">' + (totals.grade != null ? totals.grade : '-') + '</div></div>' +
-              '</div>' + critHtml
-              : ''));
-
-        $app.querySelectorAll('[data-sumid]').forEach(el => {
-          el.onclick = () => {
-            state.currentStudentId = el.dataset.sumid;
-            render();
-            const target = document.getElementById('summaryList');
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            const picker = $app.querySelector('.studentpicker');
-            if (picker) picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          };
-        });
-
-        $app.querySelectorAll('.studentpicker button').forEach(b => {
-          b.onclick = () => { state.currentStudentId = b.dataset.id; render(); };
-        });
-        $app.querySelectorAll('.levelcard').forEach(el => {
-          el.onclick = () => {
-            const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
-            const cur = ((state.rubricScores[sid] || {})[level] || {})[ci];
-            setRubricScore(sid, level, ci, cur === score ? null : score);
-          };
-        });
-      }
-
-      document.getElementById('toRoster3').onclick = () => { state.view = 'roster'; render(); };
-      const renamePerfBtn = document.getElementById('renamePerfBtn');
-      if (renamePerfBtn) renamePerfBtn.onclick = () => {
-        const nn = prompt('Yeni ad:', level);
-        if (nn && nn.trim() && nn.trim() !== level) renamePerfTask(level, nn.trim());
-      };
-      const deletePerfBtn = document.getElementById('deletePerfBtn');
-      if (deletePerfBtn) deletePerfBtn.onclick = () => {
-        if (confirm('"' + level + '" silinsin mi? Bu gorevin tum olcutleri ve ogrenci puanlari da silinir.')) {
-          deletePerfTask(level);
-        }
-      };
-      $app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b => {
-        b.onclick = () => { state.rubricLevel = b.dataset.lvl; render(); };
-      });
-      document.getElementById('editToggle').onclick = () => { state.rubricEdit = !state.rubricEdit; render(); };
-    }
-
-    let fabEl = null;
-    function ensureFab(label, onClick) {
-      removeFab();
-      fabEl = document.createElement('button');
-      fabEl.className = 'fab';
-      fabEl.textContent = label;
-      fabEl.onclick = onClick;
-      document.body.appendChild(fabEl);
-    }
-    function removeFab() {
-      if (fabEl) { fabEl.remove(); fabEl = null; }
-    }
-
-    function escapeHtml(str) {
-      return String(str == null ? '' : str).replace(/[&<>"']/g, function (m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-      });
-    }
-
-    (async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        await startApp();
-      } else {
-        renderLogin();
-      }
-      sb.auth.onAuthStateChange((event, newSession) => {
-        if (event === 'SIGNED_OUT') {
-          $logoutLink.style.display = 'none';
-        }
-      });
-    })();
-  </script>
+  });
+})();
+</script>
 </body>
-
 </html>
