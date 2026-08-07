@@ -166,6 +166,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSessio
 let state = {
   classes: [],
   cls: null,
+  classId: null,
+  userId: null,
   students: [],
   homeworks: [],
   hwStatus: {},
@@ -262,6 +264,8 @@ function renderLogin(){
 
 async function startApp(){
   $logoutLink.style.display = 'inline';
+  const { data: { user } } = await sb.auth.getUser();
+  state.userId = user ? user.id : null;
   await loadClasses();
   if(state.classes.length){
     await loadClass(state.classes[0].name);
@@ -286,7 +290,7 @@ async function addClass(name){
     showToast('Bu sinif zaten var'); return;
   }
   const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
-  const { data } = await sb.from('classes').insert({name, sort_order:maxOrder+1}).select();
+  const { data } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
   if(data && data[0]) state.classes.push(data[0]);
   await loadClass(name);
 }
@@ -294,38 +298,32 @@ async function renameClass(oldName, newName){
   newName = newName.trim();
   if(!newName || newName===oldName) return;
   const c = state.classes.find(x=>x.name===oldName);
-  if(c) c.name = newName;
-  await sb.from('classes').update({name:newName}).eq('name', oldName);
-  await sb.from('students').update({class_name:newName}).eq('class_name', oldName);
-  await sb.from('homeworks').update({class_name:newName}).eq('class_name', oldName);
-  await sb.from('rubrics').update({class_name:newName}).eq('class_name', oldName);
-  await loadClass(newName);
+  if(!c) return;
+  c.name = newName;
+  await sb.from('classes').update({name:newName}).eq('id', c.id);
+  state.cls = newName;
+  render();
   showToast('Sinif adi guncellendi');
 }
 async function deleteClass(name){
-  state.classes = state.classes.filter(c=>c.name!==name);
-  const { data: students } = await sb.from('students').select('id').eq('class_name', name);
-  const ids = (students||[]).map(s=>s.id);
-  if(ids.length){
-    await sb.from('homework_status').delete().in('student_id', ids);
-    await sb.from('rubric_scores').delete().in('student_id', ids);
-    await sb.from('students').delete().eq('class_name', name);
-  }
-  await sb.from('homeworks').delete().eq('class_name', name);
-  await sb.from('rubrics').delete().eq('class_name', name);
-  await sb.from('classes').delete().eq('name', name);
+  const c = state.classes.find(x=>x.name===name);
+  state.classes = state.classes.filter(x=>x.name!==name);
+  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, odevler, quizler, rubrikler...
   showToast('Sinif silindi');
   const next = state.classes[0];
   if(next) await loadClass(next.name);
-  else { state.cls=null; state.students=[]; state.homeworks=[]; state.loading=false; render(); }
+  else { state.cls=null; state.classId=null; state.students=[]; state.homeworks=[]; state.loading=false; render(); }
 }
 
 async function loadClass(cls){
   state.loading = true; render();
-  const { data: students } = await sb.from('students').select('*').eq('class_name',cls).order('sort_order');
-  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_name',cls).order('slot_no');
-  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_name',cls).order('slot_no');
-  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_name',cls).order('slot_no');
+  const classObj = state.classes.find(c=>c.name===cls);
+  if(!classObj){ state.loading=false; render(); return; }
+  const classId = classObj.id;
+  const { data: students } = await sb.from('students').select('*').eq('class_id',classId).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id',classId).order('slot_no');
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
   const ids = (students||[]).map(s=>s.id);
   let hwStatusRows = [];
   let rubricScoreRows = [];
@@ -338,7 +336,7 @@ async function loadClass(cls){
     const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids);
     quizScoreRows = r3.data || [];
   }
-  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_name', cls);
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_id', classId);
 
   const hwStatus = {};
   for(const row of hwStatusRows){
@@ -360,6 +358,7 @@ async function loadClass(cls){
     quizScores[row.student_id] = quizScores[row.student_id] || {};
     quizScores[row.student_id][row.slot_no] = row.score;
   }
+  state.classId = classId;
 
   state.cls = cls;
   state.students = students || [];
@@ -430,7 +429,7 @@ async function updateStudentField(studentId, field, value){
 }
 async function addPerfTask(label){
   const maxSlot = Math.max(0, ...state.perfTasks.map(t=>t.slot_no||0));
-  const { data } = await sb.from('performance_tasks').insert({class_name:state.cls, slot_no:maxSlot+1, label}).select();
+  const { data } = await sb.from('performance_tasks').insert({class_id:state.classId, slot_no:maxSlot+1, label}).select();
   if(data && data[0]) state.perfTasks.push(data[0]);
   state.rubricLevel = label;
   state.view = 'rubric';
@@ -451,9 +450,9 @@ async function renamePerfTask(oldLabel, newLabel){
   }
   state.rubricLevel = newLabel;
   render();
-  await sb.from('performance_tasks').update({label:newLabel}).eq('class_name', state.cls).eq('label', oldLabel);
-  await sb.from('rubrics').update({level:newLabel}).eq('class_name', state.cls).eq('level', oldLabel);
-  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  await sb.from('performance_tasks').update({label:newLabel}).eq('class_id', state.classId).eq('label', oldLabel);
+  await sb.from('rubrics').update({level:newLabel}).eq('class_id', state.classId).eq('level', oldLabel);
+  const { data: students } = await sb.from('students').select('id').eq('class_id', state.classId);
   const ids = (students||[]).map(s=>s.id);
   if(ids.length){
     await sb.from('rubric_scores').update({level:newLabel}).eq('level', oldLabel).in('student_id', ids);
@@ -467,9 +466,9 @@ async function deletePerfTask(label){
   state.rubricLevel = (state.perfTasks[0] && state.perfTasks[0].label) || null;
   state.view = 'roster';
   render();
-  await sb.from('performance_tasks').delete().eq('class_name', state.cls).eq('label', label);
-  await sb.from('rubrics').delete().eq('class_name', state.cls).eq('level', label);
-  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  await sb.from('performance_tasks').delete().eq('class_id', state.classId).eq('label', label);
+  await sb.from('rubrics').delete().eq('class_id', state.classId).eq('level', label);
+  const { data: students } = await sb.from('students').select('id').eq('class_id', state.classId);
   const ids = (students||[]).map(s=>s.id);
   if(ids.length){
     await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
@@ -481,7 +480,7 @@ async function addQuiz(){
   const label = prompt('Yeni quiz adi (orn. Quiz 3):');
   if(!label || !label.trim()) return;
   const maxSlot = Math.max(0, ...state.quizzes.map(q=>q.slot_no||0));
-  const { data } = await sb.from('quizzes').insert({class_name:state.cls, slot_no:maxSlot+1, label:label.trim()}).select();
+  const { data } = await sb.from('quizzes').insert({class_id:state.classId, slot_no:maxSlot+1, label:label.trim()}).select();
   if(data && data[0]) state.quizzes.push(data[0]);
   render();
   showToast('Quiz eklendi');
@@ -489,18 +488,18 @@ async function addQuiz(){
 async function renameQuiz(slotNo, label){
   const q = state.quizzes.find(x=>x.slot_no===slotNo);
   if(q) q.label = label;
-  await sb.from('quizzes').update({label}).eq('class_name', state.cls).eq('slot_no', slotNo);
+  await sb.from('quizzes').update({label}).eq('class_id', state.classId).eq('slot_no', slotNo);
 }
 async function deleteQuiz(slotNo){
   if(!confirm('Bu quiz silinsin mi? Ogrencilerin bu quize ait notlari da silinir.')) return;
   state.quizzes = state.quizzes.filter(q=>q.slot_no!==slotNo);
   render();
-  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const { data: students } = await sb.from('students').select('id').eq('class_id', state.classId);
   const ids = (students||[]).map(s=>s.id);
   if(ids.length){
     await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
   }
-  await sb.from('quizzes').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  await sb.from('quizzes').delete().eq('class_id', state.classId).eq('slot_no', slotNo);
   showToast('Quiz silindi');
 }
 async function updateQuizScore(studentId, slotNo, value){
@@ -512,7 +511,7 @@ async function updateQuizScore(studentId, slotNo, value){
 
 async function saveRubric(level){
   const criteria = state.rubrics[level] || [];
-  await sb.from('rubrics').upsert({class_name: state.cls, level, criteria}, {onConflict:'class_name,level'});
+  await sb.from('rubrics').upsert({class_id: state.classId, level, criteria}, {onConflict:'class_id,level'});
 }
 function addCriterion(level){
   state.rubrics[level] = state.rubrics[level] || [];
@@ -564,12 +563,12 @@ async function setRubricScore(studentId, level, critIndex, score){
 async function updateHomework(slotNo, field, value){
   const hw = state.homeworks.find(h=>h.slot_no===slotNo);
   if(hw) hw[field] = value;
-  await sb.from('homeworks').update({[field]: value}).eq('class_name', state.cls).eq('slot_no', slotNo);
+  await sb.from('homeworks').update({[field]: value}).eq('class_id', state.classId).eq('slot_no', slotNo);
 }
 async function addHomework(){
   const maxSlot = Math.max(0, ...state.homeworks.map(h=>h.slot_no||0));
   const nextSlot = maxSlot+1;
-  const { data } = await sb.from('homeworks').insert({class_name:state.cls, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
+  const { data } = await sb.from('homeworks').insert({class_id:state.classId, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
   if(data && data[0]) state.homeworks.push(data[0]);
   render();
   showToast('Odev eklendi');
@@ -577,12 +576,12 @@ async function addHomework(){
 async function deleteHomework(slotNo){
   state.homeworks = state.homeworks.filter(h=>h.slot_no!==slotNo);
   render();
-  const { data: students } = await sb.from('students').select('id').eq('class_name', state.cls);
+  const { data: students } = await sb.from('students').select('id').eq('class_id', state.classId);
   const ids = (students||[]).map(s=>s.id);
   if(ids.length){
     await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
   }
-  await sb.from('homeworks').delete().eq('class_name', state.cls).eq('slot_no', slotNo);
+  await sb.from('homeworks').delete().eq('class_id', state.classId).eq('slot_no', slotNo);
   showToast('Odev silindi');
 }
 async function importStudentsFromExcel(file){
@@ -625,7 +624,7 @@ async function importStudentsFromExcel(file){
       }
       if(!name) continue;
       order++;
-      newRows.push({class_name: state.cls, no: no||null, name, sort_order: order});
+      newRows.push({class_id: state.classId, no: no||null, name, sort_order: order});
     }
     if(!newRows.length){ showToast('Ogrenci satiri bulunamadi'); return; }
 
@@ -641,7 +640,7 @@ async function importStudentsFromExcel(file){
 
 async function addStudent(name){
   const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
-  const { data } = await sb.from('students').insert({class_name:state.cls, name, sort_order:maxOrder+1}).select();
+  const { data } = await sb.from('students').insert({class_id:state.classId, name, sort_order:maxOrder+1}).select();
   if(data && data[0]) state.students.push(data[0]);
   render();
   showToast('Ogrenci eklendi');
