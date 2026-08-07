@@ -765,6 +765,7 @@ function render(){
   else if(state.view==='hw_picker') renderHwPicker();
   else if(state.view==='quick_hw') renderQuickHw();
   else if(state.view==='quizzes') renderQuizzes();
+  else if(state.view==='quiz_picker') renderQuizPicker();
   else if(state.view==='quick_quiz') renderQuickQuiz();
   else if(state.view==='rubric') renderRubric();
 }
@@ -816,6 +817,10 @@ function renderTopbar(){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Quiz Yonetimi';
     $topSub.textContent = state.cls;
+  } else if(state.view==='quiz_picker'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = 'Quiz Not Gir';
+    $topSub.textContent = 'Not girmek istedigin quizi sec';
   } else if(state.view==='quick_quiz'){
     $backBtn.style.visibility='visible';
     const q = state.quizzes.find(x=>x.slot_no===state.activeQuizSlot);
@@ -829,7 +834,7 @@ function renderTopbar(){
 }
 $backBtn.onclick = ()=>{ 
   if(state.view==='quick_hw') state.view = state.hwCheckFrom || 'hw_picker';
-  else if(state.view==='quick_quiz') state.view='quizzes';
+  else if(state.view==='quick_quiz') state.view = state.quizCheckFrom || 'quiz_picker';
   else state.view='roster'; 
   render(); 
 };
@@ -844,8 +849,9 @@ function renderRoster(){
       '<button id="hwEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Duzenle</button>' +
       '<button id="hwCheckBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Kontrol Et</button>' +
     '</div>' +
-    '<div style="margin:-6px 0 14px; font-size:12.5px;">' +
-      '<a class="linklike" id="quizLink">Quizleri duzenle &rsaquo;</a>' +
+    '<div style="display:flex; gap:8px; margin-bottom:14px;">' +
+      '<button id="quizEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Quizleri Duzenle</button>' +
+      '<button id="quizEnterBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Quiz Not Gir</button>' +
     '</div>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
     '<div style="display:flex; gap:6px; margin-bottom:10px;">' +
@@ -873,7 +879,8 @@ function renderRoster(){
     '</div>';
   document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
   document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
-  document.getElementById('quizLink').onclick = ()=>{ state.view='quizzes'; render(); };
+  document.getElementById('quizEditBtn').onclick = ()=>{ state.view='quizzes'; render(); };
+  document.getElementById('quizEnterBtn').onclick = ()=>{ state.view='quiz_picker'; render(); };
   document.getElementById('backupLink').onclick = exportBackup;
   document.getElementById('excelLink').onclick = exportCSV;
   document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
@@ -988,7 +995,7 @@ function barChartSvg(points){
       : '<rect x="'+x.toFixed(1)+'" y="'+(padT+innerH-2)+'" width="'+barW.toFixed(1)+'" height="2" fill="#e2e0d8"/>') +
       '<text x="'+(x+barW/2).toFixed(1)+'" y="'+(H-10)+'" font-size="9" fill="#6b6f76" text-anchor="middle">'+escapeHtml((p.label||'').slice(0,10))+'</text>';
   }).join('');
-  return '<div class="card" style="padding:12px 8px;"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%; height:auto; display:block;">'+bars+'</svg></div>';
+  return '<div class="card" style="padding:12px 8px; width:50%; margin:0 auto;"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%; height:auto; display:block;">'+bars+'</svg></div>';
 }
 
 function renderStudent(){
@@ -1212,6 +1219,30 @@ function renderQuickHw(){
   });
 }
 
+function renderQuizPicker(){
+  removeFab();
+  const rows = state.quizzes.map(q=>{
+    const avg = quizClassAverage(q.slot_no);
+    return '<div class="card studentcard" data-pickquiz="'+q.slot_no+'">' +
+      '<div class="name">'+escapeHtml(q.label)+
+        '<div style="font-size:11.5px; color:var(--ink-soft); font-weight:400;">Sinif ortalamasi: '+(avg!=null?avg:'henuz not yok')+'</div></div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>';
+  }).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toRoster6">&lsaquo; '+state.cls+' listesine don</a>' +
+    (rows || '<div class="empty">Henuz quiz tanimlanmadi.<br>Once "Quizleri Duzenle" ile quiz ekle.</div>');
+  document.getElementById('toRoster6').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('[data-pickquiz]').forEach(el=>{
+    el.onclick = ()=>{
+      state.activeQuizSlot = parseInt(el.dataset.pickquiz);
+      state.quizCheckFrom = 'quiz_picker';
+      state.view = 'quick_quiz';
+      render();
+    };
+  });
+}
+
 function renderQuizzes(){
   removeFab();
   const rows = state.quizzes.map(q=>
@@ -1234,6 +1265,7 @@ function renderQuizzes(){
   $app.querySelectorAll('button[data-notes]').forEach(btn=>{
     btn.onclick = ()=>{
       state.activeQuizSlot = parseInt(btn.dataset.notes);
+      state.quizCheckFrom = 'quizzes';
       state.view = 'quick_quiz';
       render();
     };
@@ -1241,6 +1273,12 @@ function renderQuizzes(){
   $app.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
   });
+}
+
+function quizClassAverage(slotNo){
+  const vals = state.students.map(s=>parseFloat((state.quizScores[s.id]||{})[slotNo])).filter(v=>!isNaN(v));
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
 }
 
 function renderQuickQuiz(){
@@ -1267,16 +1305,23 @@ function renderQuickQuiz(){
     '</div>';
   }).join('');
 
+  const avg = quizClassAverage(slotNo);
+
   $app.innerHTML =
     '<a class="backlink" id="toQuizList">&lsaquo; Quiz listesine dön</a>' +
     '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:16px;">' +
       '<div><b>'+escapeHtml(q.label)+'</b><div style="font-size:12px; opacity:0.8;">Not girmek istediğin öğrencinin kutucuğuna dokun</div></div>' +
     '</div>' +
-    (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>');
+    (sorted.length ? listHtml : '<div class="empty">Öğrenci yok.</div>') +
+    '<div class="rubricsummary" id="quizAvgBar"><div><div class="lbl">Sinif Ortalamasi</div><div class="num" id="quizAvgVal">'+(avg!=null?avg:'-')+'</div></div></div>';
 
   document.getElementById('toQuizList').onclick = ()=>{ state.view='quizzes'; render(); };
   $app.querySelectorAll('[data-quick-quiz-id]').forEach(inp=>{
-    inp.onblur = ()=> updateQuizScore(inp.dataset.quickQuizId, slotNo, inp.value);
+    inp.onblur = async ()=>{
+      await updateQuizScore(inp.dataset.quickQuizId, slotNo, inp.value);
+      const a = quizClassAverage(slotNo);
+      document.getElementById('quizAvgVal').textContent = a!=null ? a : '-';
+    };
   });
 }
 
