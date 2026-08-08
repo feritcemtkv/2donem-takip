@@ -1,4 +1,4 @@
-a<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -290,7 +290,8 @@ async function addClass(name){
     showToast('Bu sinif zaten var'); return;
   }
   const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
-  const { data } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
+  const { data, error } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
+  if(error){ showToast('HATA: '+error.message); console.error('addClass error', error); return; }
   if(data && data[0]) state.classes.push(data[0]);
   await loadClass(name);
 }
@@ -640,7 +641,8 @@ async function importStudentsFromExcel(file){
 
 async function addStudent(name){
   const maxOrder = Math.max(0, ...state.students.map(s=>s.sort_order||0));
-  const { data } = await sb.from('students').insert({class_id:state.classId, name, sort_order:maxOrder+1}).select();
+  const { data, error } = await sb.from('students').insert({class_id:state.classId, name, sort_order:maxOrder+1}).select();
+  if(error){ showToast('HATA: '+error.message); console.error('addStudent error', error); return; }
   if(data && data[0]) state.students.push(data[0]);
   render();
   showToast('Ogrenci eklendi');
@@ -798,7 +800,7 @@ function renderTopbar(){
     $backBtn.style.visibility='visible';
     const s = studentById(state.currentStudentId);
     $topTitle.textContent = s ? s.name : '';
-    $topSub.textContent = state.cls;
+    $topSub.textContent = state.cls + (s && s.no ? ' · No: '+s.no : '');
   } else if(state.view==='homeworks'){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = 'Odev Tanimlama';
@@ -1087,6 +1089,10 @@ function renderStudent(){
 
   $app.innerHTML =
     '<a class="backlink" id="toRoster">&lsaquo; '+state.cls+' listesine don</a>' +
+    '<div style="display:flex; align-items:center; gap:8px; margin:-8px 0 14px;">' +
+      '<label style="font-size:12px; color:var(--ink-soft); font-weight:600;">No:</label>' +
+      '<input type="text" data-f="no" value="'+(s.no||'')+'" style="width:70px; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13px; font-weight:700; color:var(--navy); font-family:inherit;">' +
+    '</div>' +
     '<div class="infobar" style="background:var(--navy); color:#fff; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">' +
       '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Quiz Ort.</div><b class="num" style="font-size:18px;">'+quizAvg+'</b></div>' +
       '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
@@ -1094,14 +1100,10 @@ function renderStudent(){
       '<div style="width:1px; background:rgba(255,255,255,0.2); height:30px;"></div>' +
       '<div style="text-align:center; flex:1;"><div style="font-size:11px; opacity:0.8; margin-bottom:4px;">Ödev Durumu</div><b class="num" style="font-size:18px;">%'+hwPct+'</b></div>' +
     '</div>' +
-    '<div class="sectiontitle"><span>Ogrenci Bilgisi</span><span class="line"></span></div>' +
-    '<div class="detail-grid">' +
-      '<div class="field"><label>No</label><input type="text" data-f="no" value="'+(s.no||'')+'"></div>' +
-    '</div>' +
     (state.quizzes.length ?
-      '<div class="sectiontitle"><span>Sinav Notlari</span><span class="line"></span></div>' +
+      '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div>' +
       '<div class="detail-grid">'+quizHtml+'</div>' +
-      lineChartSvg(state.quizzes.map(q=>({label:q.label, value:parseFloat((state.quizScores[s.id]||{})[q.slot_no])})))
+      classAvgCompareHtml(quizCount>0?quizSum/quizCount:null, overallQuizClassAverage(), 'Mini Sinav')
       : '') +
     (state.perfTasks.length ?
       '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
@@ -1132,7 +1134,7 @@ function renderStudent(){
   $app.querySelectorAll('[data-quiz]').forEach(inp=>{
     inp.onblur = ()=> updateQuizScore(s.id, parseInt(inp.dataset.quiz), inp.value);
   });
-  $app.querySelectorAll('.field input').forEach(inp=>{
+  $app.querySelectorAll('input[data-f]').forEach(inp=>{
     if(inp.dataset.quiz) return;
     inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
   });
@@ -1321,6 +1323,18 @@ function perfTaskClassAverage(label){
   if(!vals.length) return null;
   return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
 }
+function overallQuizClassAverage(){
+  const vals = [];
+  state.students.forEach(s=>{
+    state.quizzes.forEach(q=>{
+      const v = parseFloat((state.quizScores[s.id]||{})[q.slot_no]);
+      if(!isNaN(v)) vals.push(v);
+    });
+  });
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+}
+
 function overallPerfClassAverage(){
   const vals = [];
   state.students.forEach(s=>{
