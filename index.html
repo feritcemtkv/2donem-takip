@@ -149,6 +149,7 @@
   </div>
   <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
 </header>
+<div id="welcomeBar" style="display:none; background:#fff; padding:8px 16px; font-size:12.5px; color:var(--ink-soft); border-bottom:1px solid var(--line);"></div>
 <div class="classbar" id="classbar"></div>
 
 <main id="app"></main>
@@ -234,6 +235,9 @@ async function doLogin(username, password){
 async function doLogout(){
   await sb.auth.signOut();
   $logoutLink.style.display = 'none';
+  state.username = '';
+  document.getElementById('welcomeBar').style.display = 'none';
+  state.cls = null; state.classId = null; state.classes = []; state.students = [];
   renderLogin();
 }
 
@@ -266,6 +270,7 @@ async function startApp(){
   $logoutLink.style.display = 'inline';
   const { data: { user } } = await sb.auth.getUser();
   state.userId = user ? user.id : null;
+  state.username = user && user.email ? user.email.split('@')[0] : '';
   await loadClasses();
   if(state.classes.length){
     await loadClass(state.classes[0].name);
@@ -750,6 +755,13 @@ function exportCSV() {
 }
 
 function render(){
+  const $welcomeBar = document.getElementById('welcomeBar');
+  if(state.username){
+    $welcomeBar.style.display = 'block';
+    $welcomeBar.textContent = 'Hosgeldin: ' + state.username;
+  } else {
+    $welcomeBar.style.display = 'none';
+  }
   renderClassbar();
   renderTopbar();
   if(state.loading){
