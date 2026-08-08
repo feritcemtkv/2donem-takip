@@ -5,6 +5,9 @@ on:
     - cron: '0 21 * * *'   # her gun TSI 00:00 civari (UTC 21:00)
   workflow_dispatch: {}     # istersen Actions sekmesinden elle de calistirabilirsin
 
+permissions:
+  contents: write
+
 jobs:
   backup:
     runs-on: ubuntu-latest
