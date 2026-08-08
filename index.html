@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+a<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>2. Donem Takip</title>
+<title>Odev Kontrol</title>
 <style>
   :root{
     --navy:#1F4E78;
@@ -144,7 +144,7 @@
 <header class="top" id="topbar">
   <div class="back" id="backBtn" style="visibility:hidden">&#8249;</div>
   <div style="flex:1">
-    <h1 id="topTitle">2. Donem Takip</h1>
+    <h1 id="topTitle">Odev Kontrol</h1>
     <div class="sub" id="topSub"></div>
   </div>
   <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
@@ -239,13 +239,13 @@ async function doLogout(){
 
 function renderLogin(){
   $classbar.innerHTML = '';
-  $topTitle.textContent = '2. Donem Takip';
+  $topTitle.textContent = 'Odev Kontrol';
   $topSub.textContent = '';
   $backBtn.style.visibility = 'hidden';
   $app.innerHTML =
     '<div class="loginwrap"><div class="loginbox">' +
       '<h2>Giris Yap</h2>' +
-      '<p class="sub">2. Donem Takip uygulamasina erismek icin giris yapin</p>' +
+      '<p class="sub">Odev Kontrol uygulamasina erismek icin giris yapin</p>' +
       '<label>Kullanici Adi</label>' +
       '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
       '<label>Sifre</label>' +
@@ -786,7 +786,7 @@ function renderClassbar(){
 function renderTopbar(){
   if(!state.cls){
     $backBtn.style.visibility='hidden';
-    $topTitle.textContent = '2. Donem Takip';
+    $topTitle.textContent = 'Odev Kontrol';
     $topSub.textContent = '';
     return;
   }
@@ -972,6 +972,47 @@ function lineChartSvg(points){
     '</svg></div>';
 }
 
+function progressBarsHtml(points){
+  const rows = points.map(p=>{
+    const v = p.value;
+    const pct = v==null ? 0 : Math.max(0, Math.min(100, v));
+    const color = v==null ? '#dcdad2' : (v>=60 ? 'var(--good)' : 'var(--accent)');
+    return '<div style="margin-bottom:12px;">' +
+      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;">' +
+        '<span style="font-weight:600; color:var(--ink);">'+escapeHtml(p.label)+'</span>' +
+        '<span style="font-weight:700; color:'+(v==null?'var(--ink-soft)':color)+';">'+(v!=null?Math.round(v):'-')+'</span>' +
+      '</div>' +
+      '<div style="background:#eceae3; border-radius:999px; height:10px; overflow:hidden;">' +
+        '<div style="width:'+pct+'%; height:100%; background:'+color+'; border-radius:999px;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="card">'+rows+'</div>';
+}
+
+function classAvgCompareHtml(studentVal, classAvg, label){
+  if(studentVal==null && classAvg==null) return '';
+  const sv = studentVal==null ? 0 : studentVal;
+  const cv = classAvg==null ? 0 : classAvg;
+  const svColor = studentVal>=cv ? 'var(--good)' : 'var(--accent)';
+  const row = (lbl, val, color)=>{
+    const pct = val==null ? 0 : Math.max(0, Math.min(100,val));
+    return '<div style="margin-bottom:10px;">' +
+      '<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px; color:var(--ink-soft);">' +
+        '<span>'+lbl+'</span><span style="font-weight:700; color:'+color+';">'+(val!=null?Math.round(val):'-')+'</span>' +
+      '</div>' +
+      '<div style="background:#eceae3; border-radius:999px; height:9px; overflow:hidden;">' +
+        '<div style="width:'+pct+'%; height:100%; background:'+color+'; border-radius:999px;"></div>' +
+      '</div>' +
+    '</div>';
+  };
+  return '<div class="card">' +
+    '<div style="font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; font-weight:700;">'+escapeHtml(label)+': Ogrenci vs Sinif Ortalamasi</div>' +
+    row('Bu ogrenci', studentVal, svColor) +
+    row('Sinif ortalamasi', classAvg, 'var(--navy)') +
+    '</div>';
+}
+
 function barChartSvg(points){
   const valid = points.filter(p=>p.value!=null);
   if(!valid.length) return '';
@@ -1065,7 +1106,8 @@ function renderStudent(){
     (state.perfTasks.length ?
       '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div>' +
       '<div class="detail-grid">'+perfHtml+'</div>' +
-      barChartSvg(state.perfTasks.map(t=>({label:t.label, value:rubricTotal(s.id,t.label).grade})))
+      progressBarsHtml(state.perfTasks.map(t=>({label:t.label, value:rubricTotal(s.id,t.label).grade}))) +
+      classAvgCompareHtml(perfCount>0?perfSum/perfCount:null, overallPerfClassAverage(), 'Genel Performans')
       : '') +
     '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
@@ -1272,6 +1314,23 @@ function renderQuizzes(){
   $app.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
   });
+}
+
+function perfTaskClassAverage(label){
+  const vals = state.students.map(s=>rubricTotal(s.id,label).grade).filter(v=>v!=null);
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+}
+function overallPerfClassAverage(){
+  const vals = [];
+  state.students.forEach(s=>{
+    state.perfTasks.forEach(t=>{
+      const g = rubricTotal(s.id,t.label).grade;
+      if(g!=null) vals.push(g);
+    });
+  });
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
 }
 
 function quizClassAverage(slotNo){
