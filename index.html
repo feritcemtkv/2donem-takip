@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Odev Kontrol</title>
+<title>Ödev Kontrol</title>
 <style>
   :root{
     --navy:#1F4E78;
@@ -144,7 +144,7 @@
 <header class="top" id="topbar">
   <div class="back" id="backBtn" style="visibility:hidden">&#8249;</div>
   <div style="flex:1">
-    <h1 id="topTitle">Odev Kontrol</h1>
+    <h1 id="topTitle">Ödev Kontrol</h1>
     <div class="sub" id="topSub"></div>
   </div>
   <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
@@ -243,13 +243,13 @@ async function doLogout(){
 
 function renderLogin(){
   $classbar.innerHTML = '';
-  $topTitle.textContent = 'Odev Kontrol';
+  $topTitle.textContent = 'Ödev Kontrol';
   $topSub.textContent = '';
   $backBtn.style.visibility = 'hidden';
   $app.innerHTML =
     '<div class="loginwrap"><div class="loginbox">' +
       '<h2>Giris Yap</h2>' +
-      '<p class="sub">Odev Kontrol uygulamasina erismek icin giris yapin</p>' +
+      '<p class="sub">Ödev Kontrol uygulamasina erismek icin giris yapin</p>' +
       '<label>Kullanici Adi</label>' +
       '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
       '<label>Sifre</label>' +
@@ -316,7 +316,7 @@ async function renameClass(oldName, newName){
 async function deleteClass(name){
   const c = state.classes.find(x=>x.name===name);
   state.classes = state.classes.filter(x=>x.name!==name);
-  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, odevler, quizler, rubrikler...
+  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, ödevler, quizler, rubrikler...
   showToast('Sinif silindi');
   const next = state.classes[0];
   if(next) await loadClass(next.name);
@@ -579,7 +579,7 @@ async function addHomework(){
   const { data } = await sb.from('homeworks').insert({class_id:state.classId, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
   if(data && data[0]) state.homeworks.push(data[0]);
   render();
-  showToast('Odev eklendi');
+  showToast('Ödev eklendi');
 }
 async function deleteHomework(slotNo){
   state.homeworks = state.homeworks.filter(h=>h.slot_no!==slotNo);
@@ -590,7 +590,7 @@ async function deleteHomework(slotNo){
     await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
   }
   await sb.from('homeworks').delete().eq('class_id', state.classId).eq('slot_no', slotNo);
-  showToast('Odev silindi');
+  showToast('Ödev silindi');
 }
 async function importStudentsFromExcel(file){
   if(!file) return;
@@ -708,7 +708,7 @@ function exportCSV() {
   let headers = ['No', 'Ad Soyad', 'Durum'];
   state.quizzes.forEach(q => headers.push(q.label));
   state.perfTasks.forEach(t => headers.push(t.label));
-  headers.push('Odev Durumu (%)');
+  headers.push('Ödev Durumu (%)');
   headers.push('Ogretmen Notu');
   csv += headers.join(';') + '\n';
   
@@ -839,7 +839,7 @@ function renderTopbar(){
   }
   if(!state.cls){
     $backBtn.style.visibility='hidden';
-    $topTitle.textContent = 'Odev Kontrol';
+    $topTitle.textContent = 'Ödev Kontrol';
     $topSub.textContent = '';
     return;
   }
@@ -854,12 +854,12 @@ function renderTopbar(){
     $topSub.textContent = state.cls + (s && s.no ? ' · No: '+s.no : '');
   } else if(state.view==='homeworks'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = 'Odev Tanimlama';
+    $topTitle.textContent = 'Ödev Tanimlama';
     $topSub.textContent = state.cls;
   } else if(state.view==='hw_picker'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = 'Odevleri Kontrol Et';
-    $topSub.textContent = 'Kontrol etmek istedigin odevi sec';
+    $topTitle.textContent = 'Ödevleri Kontrol Et';
+    $topSub.textContent = 'Kontrol etmek istedigin ödevi sec';
   } else if(state.view==='quick_hw'){
     $backBtn.style.visibility='visible';
     const hw = state.homeworks.find(h=>h.slot_no===state.activeHwSlot);
@@ -880,7 +880,7 @@ function renderTopbar(){
     $topSub.textContent = q ? q.label : state.cls;
   } else if(state.view==='rubric'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = 'Performans Odevi';
+    $topTitle.textContent = 'Performans Ödevi';
     $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
   }
 }
@@ -898,11 +898,11 @@ function renderRoster(){
   const a = assignedCount();
   $app.innerHTML =
     '<div class="infobar">' +
-      '<div>Bugune kadar verilen odev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
+      '<div>Bugune kadar verilen ödev: <b class="num">'+a+'</b> / '+state.homeworks.length+'</div>' +
     '</div>' +
     '<div style="display:flex; gap:8px; margin-bottom:14px;">' +
-      '<button id="hwEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Duzenle</button>' +
-      '<button id="hwCheckBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Odevleri Kontrol Et</button>' +
+      '<button id="hwEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Ödevleri Duzenle</button>' +
+      '<button id="hwCheckBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Ödevleri Kontrol Et</button>' +
     '</div>' +
     '<div style="display:flex; gap:8px; margin-bottom:14px;">' +
       '<button id="quizEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Quizleri Duzenle</button>' +
@@ -916,12 +916,12 @@ function renderRoster(){
     '<div id="rosterList"></div>' +
     '<button id="excelImportBtn" style="width:100%; border:1px dashed var(--navy); background:#fff; color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px; margin-top:10px;">&#128228; Excelden Ogrenci Listesi Yukle</button>' +
     '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
-    '<div class="sectiontitle" style="margin-top:26px;"><span>Performans Odevi</span><span class="line"></span></div>' +
+    '<div class="sectiontitle" style="margin-top:26px;"><span>Performans Ödevi</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
       state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
-      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans odevi yok.</div>' : '') +
+      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans ödevi yok.</div>' : '') +
     '</div>' +
-    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Odevi Ekle</button>' +
+    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Ödevi Ekle</button>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Sinif Islemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:10px;">' +
       '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sinif Adini Duzenle</button>' +
@@ -941,7 +941,7 @@ function renderRoster(){
   document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
   document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
   document.getElementById('addPerfBtn2').onclick = ()=>{
-    const label = prompt('Yeni performans odevinin adi (orn. Performans 4):');
+    const label = prompt('Yeni performans ödevinin adi (orn. Performans 4):');
     if(label && label.trim()) addPerfTask(label.trim());
   };
   document.getElementById('renameClsBtn').onclick = ()=>{
@@ -949,7 +949,7 @@ function renderRoster(){
     if(nn && nn.trim() && nn.trim()!==state.cls) renameClass(state.cls, nn.trim());
   };
   document.getElementById('deleteClsBtn').onclick = ()=>{
-    if(confirm(state.cls+' sinifi ve tum ogrenci/odev/rubrik verileri kalici olarak silinsin mi?')){
+    if(confirm(state.cls+' sinifi ve tum ogrenci/ödev/rubrik verileri kalici olarak silinsin mi?')){
       deleteClass(state.cls);
     }
   };
@@ -1119,7 +1119,7 @@ function renderStudent(){
   const hwRows = state.homeworks.map(h=>{
     const future = !h.check_date || h.check_date > today;
     const done = !!(state.hwStatus[s.id]||{})[h.slot_no];
-    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
+    const topic = h.topic || ('(Ödev '+h.slot_no+' tanimlanmadi)');
     const dateLine = (h.hw_date ? ('Verildi: '+fmtDate(h.hw_date)) : 'Verilis tarihi yok') +
       ' &middot; ' + (h.check_date ? ('Kontrol: '+fmtDate(h.check_date)) : 'Kontrol tarihi yok');
     return '<div class="hwrow '+(future?'future':'')+'">' +
@@ -1165,7 +1165,7 @@ function renderStudent(){
       progressBarsHtml(state.perfTasks.map(t=>({label:t.label, value:rubricTotal(s.id,t.label).grade}))) +
       classAvgCompareHtml(perfCount>0?perfSum/perfCount:null, overallPerfClassAverage(), 'Genel Performans')
       : '') +
-    '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
+    '<div class="sectiontitle"><span>Ödev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
     '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
     '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>' +
@@ -1180,7 +1180,7 @@ function renderStudent(){
     if(newName && newName.trim() && newName.trim()!==s.name) renameStudent(s.id, newName.trim());
   };
   document.getElementById('deleteBtn').onclick = ()=>{
-    if(confirm(s.name+' silinsin mi? Bu islem geri alinamaz, tum odev ve rubrik verileri de silinir.')){
+    if(confirm(s.name+' silinsin mi? Bu islem geri alinamaz, tum ödev ve rubrik verileri de silinir.')){
       deleteStudent(s.id);
     }
   };
@@ -1206,14 +1206,14 @@ function renderHwPicker(){
   const rows = state.homeworks.map(h=>{
     const checked = h.check_date && h.check_date <= today;
     return '<div class="card studentcard" data-pick="'+h.slot_no+'">' +
-      '<div class="name">'+escapeHtml(h.topic || ('Odev #'+h.slot_no))+
+      '<div class="name">'+escapeHtml(h.topic || ('Ödev #'+h.slot_no))+
         '<div style="font-size:11.5px; color:var(--ink-soft); font-weight:400;">Kontrol: '+(h.check_date?fmtDate(h.check_date):'belirtilmemis')+(checked?'':' (henuz gelmedi)')+'</div></div>' +
       '<div class="chev">&rsaquo;</div>' +
     '</div>';
   }).join('');
   $app.innerHTML =
     '<a class="backlink" id="toRoster5">&lsaquo; '+state.cls+' listesine don</a>' +
-    (rows || '<div class="empty">Henuz odev tanimlanmadi.<br>Once "Odevleri Duzenle" ile odev ekle.</div>');
+    (rows || '<div class="empty">Henuz ödev tanimlanmadi.<br>Once "Ödevleri Duzenle" ile ödev ekle.</div>');
   document.getElementById('toRoster5').onclick = ()=>{ state.view='roster'; render(); };
   $app.querySelectorAll('[data-pick]').forEach(el=>{
     el.onclick = ()=>{
@@ -1245,9 +1245,9 @@ function renderHomeworks(){
   ).join('');
   $app.innerHTML =
     '<a class="backlink" id="toRoster2">&lsaquo; '+state.cls+' listesine don</a>' +
-    '<div class="card">'+(rows||'<div class="empty">Henuz odev yok.</div>')+'</div>' +
-    '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Odev Ekle</button>' +
-    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">"Verildigi Tarih" bilgi amaclidir. Tamamlanma yuzdesi ve "gelecek odev" durumu "Kontrol Tarihi"ne gore hesaplanir — kontrol tarihi gelmeden odev yuzdeye dahil edilmez.</p>';
+    '<div class="card">'+(rows||'<div class="empty">Henuz ödev yok.</div>')+'</div>' +
+    '<button id="addHwBtn" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:13px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:14px;">+ Ödev Ekle</button>' +
+    '<p style="font-size:12.5px;color:var(--ink-soft);padding:0 4px;">"Verildigi Tarih" bilgi amaclidir. Tamamlanma yuzdesi ve "gelecek ödev" durumu "Kontrol Tarihi"ne gore hesaplanir — kontrol tarihi gelmeden ödev yuzdeye dahil edilmez.</p>';
   document.getElementById('toRoster2').onclick = ()=>{ state.view='roster'; render(); };
   document.getElementById('addHwBtn').onclick = addHomework;
   $app.querySelectorAll('input[data-f]').forEach(inp=>{
@@ -1263,7 +1263,7 @@ function renderHomeworks(){
   });
   $app.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = ()=>{
-      if(confirm('Bu odev silinsin mi? Ogrencilerin bu odeve ait isaretleri de silinir.')){
+      if(confirm('Bu ödev silinsin mi? Ogrencilerin bu ödeve ait isaretleri de silinir.')){
         deleteHomework(parseInt(btn.dataset.del));
       }
     };
@@ -1705,7 +1705,7 @@ function renderAdminClass(){
   }).join('');
   $app.innerHTML =
     '<a class="backlink" id="toAdminClasses">&lsaquo; '+escapeHtml(state.adminTeacher.username)+' siniflarina don</a>' +
-    '<div class="infobar"><div>Bugune kadar verilen odev: <b class="num">'+assigned+'</b> / '+state.adminHomeworks.length+'</div></div>' +
+    '<div class="infobar"><div>Bugune kadar verilen ödev: <b class="num">'+assigned+'</b> / '+state.adminHomeworks.length+'</div></div>' +
     '<div class="sectiontitle"><span>Ogrenciler (salt okunur)</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Ogrenci yok.</div>');
   document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
@@ -1767,7 +1767,7 @@ function renderAdminStudent(){
   const hwRows = state.adminHomeworks.map(h=>{
     const future = !h.check_date || h.check_date > today;
     const done = !!(state.adminHwStatus[s.id]||{})[h.slot_no];
-    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
+    const topic = h.topic || ('(Ödev '+h.slot_no+' tanimlanmadi)');
     return '<div class="hwrow '+(future?'future':'')+'">' +
       '<div class="topic"><div class="t">'+escapeHtml(topic)+'</div>' +
         '<div class="d">'+(h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'')+(h.check_date?(' &middot; Kontrol: '+fmtDate(h.check_date)):'')+'</div></div>' +
@@ -1783,8 +1783,8 @@ function renderAdminStudent(){
     (s.no ? '<p style="font-size:12.5px; color:var(--ink-soft); margin:8px 0 0;">No: '+escapeHtml(s.no)+'</p>' : '') +
     (state.adminQuizzes.length ? '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (state.adminPerfTasks.length ? '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
-    '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
-    '<div class="card">'+(hwRows||'<div class="empty">Odev yok.</div>')+'</div>' +
+    '<div class="sectiontitle"><span>Ödev Gecmisi</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows||'<div class="empty">Ödev yok.</div>')+'</div>' +
     (s.teacher_note ? '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div><div class="card" style="font-size:13.5px; color:var(--ink);">'+escapeHtml(s.teacher_note)+'</div>' : '');
 
   document.getElementById('toAdminClass').onclick = ()=>{ state.view='admin_class'; render(); };
