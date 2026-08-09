@@ -280,8 +280,6 @@ async function startApp(){
   state.isAdmin = state.userEmail === 'ferit@takip.local';
   if(state.isAdmin){
     state.view = 'admin_teachers';
-    state.loading = false;
-    render();
     await loadAdminTeachers();
     return;
   }
@@ -826,7 +824,7 @@ function render(){
     $welcomeBar.innerHTML = '<span>Hosgeldin: '+escapeHtml(state.username)+'</span>' +
       (state.isAdmin ? '<a class="linklike" id="adminLink" style="font-size:12px;">&#128065; Ogretmenleri Goruntule</a>' : '');
     const adminLink = document.getElementById('adminLink');
-    if(adminLink) adminLink.onclick = ()=>{ state.view='admin_teachers'; state.classId=null; render(); loadAdminTeachers(); };
+    if(adminLink) adminLink.onclick = ()=>{ state.view='admin_teachers'; state.classId=null; loadAdminTeachers(); };
   } else {
     $welcomeBar.style.display = 'none';
   }
@@ -1697,7 +1695,7 @@ async function deleteTeacherProfile(teacherId, username){
 
 function renderAdminTeachers(){
   removeFab();
-  const rows = state.adminTeachers.map(t=>
+  const rows = (state.adminTeachers||[]).map(t=>
     '<div class="card studentcard" data-teacher="'+t.id+'" data-uname="'+escapeHtml(t.username||'')+'">' +
       '<div class="name">'+escapeHtml(t.username||'(isimsiz)') +
         '<div style="font-size:11px; color:var(--ink-soft); font-weight:400; margin-top:2px;">Son giris: '+(t.last_sign_in_at?fmtDateTime(t.last_sign_in_at):'Hic giris yapmamis')+' &middot; <span data-activity="'+t.id+'" data-auname="'+escapeHtml(t.username||'')+'" style="color:var(--navy); font-weight:700; text-decoration:underline;">Aktiviteler</span></div>' +
@@ -1716,7 +1714,6 @@ function renderAdminTeachers(){
       if(e.target.closest('[data-activity]') || e.target.closest('[data-deltch]')) return;
       state.adminTeacher = { id: el.dataset.teacher, username: el.dataset.uname };
       state.view = 'admin_classes';
-      render();
       loadAdminClasses(el.dataset.teacher);
     };
   });
@@ -1725,7 +1722,6 @@ function renderAdminTeachers(){
       e.stopPropagation();
       state.adminTeacher = { id: el.dataset.activity, username: el.dataset.auname };
       state.view = 'admin_activity';
-      render();
       loadAdminActivity(el.dataset.activity);
     };
   });
@@ -1771,7 +1767,7 @@ async function loadAdminClasses(teacherId){
 
 function renderAdminClasses(){
   removeFab();
-  const rows = state.adminClasses.map(c=>
+  const rows = (state.adminClasses||[]).map(c=>
     '<div class="card studentcard" data-class="'+c.id+'" data-cname="'+escapeHtml(c.name)+'">' +
       '<div class="name">'+escapeHtml(c.name)+'</div>' +
       '<div class="chev">&rsaquo;</div>' +
@@ -1786,7 +1782,6 @@ function renderAdminClasses(){
     el.onclick = ()=>{
       state.adminClass = { id: el.dataset.class, name: el.dataset.cname };
       state.view = 'admin_class';
-      render();
       loadAdminClassDetail(el.dataset.class);
     };
   });
@@ -1817,11 +1812,11 @@ async function loadAdminClassDetail(classId){
 function renderAdminClass(){
   removeFab();
   const today = todayStr();
-  const assigned = state.adminHomeworks.filter(h=>h.check_date && h.check_date<=today).length;
-  const rows = state.adminStudents.map(s=>{
+  const assigned = (state.adminHomeworks||[]).filter(h=>h.check_date && h.check_date<=today).length;
+  const rows = (state.adminStudents||[]).map(s=>{
     const st = state.adminHwStatus[s.id] || {};
     let done = 0;
-    state.adminHomeworks.forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) done++; });
+    (state.adminHomeworks||[]).forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) done++; });
     const p = assigned>0 ? Math.round((done/assigned)*100) : 0;
     return '<div class="card studentcard" data-student="'+s.id+'">' +
       '<div class="no">'+(s.no||'')+'</div>' +
@@ -1832,7 +1827,7 @@ function renderAdminClass(){
   }).join('');
   $app.innerHTML =
     '<a class="backlink" id="toAdminClasses">&lsaquo; '+escapeHtml(state.adminTeacher.username)+' sınıflarına don</a>' +
-    '<div class="infobar"><div>Bugune kadar verilen ödev: <b class="num">'+assigned+'</b> / '+state.adminHomeworks.length+'</div></div>' +
+    '<div class="infobar"><div>Bugune kadar verilen ödev: <b class="num">'+assigned+'</b> / '+(state.adminHomeworks||[]).length+'</div></div>' +
     '<div class="sectiontitle"><span>Ogrenciler (salt okunur)</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Ogrenci yok.</div>');
   document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
@@ -1840,7 +1835,6 @@ function renderAdminClass(){
     el.onclick = ()=>{
       state.adminStudent = state.adminStudents.find(s=>s.id===el.dataset.student);
       state.view = 'admin_student';
-      render();
       loadAdminStudentDetail(el.dataset.student);
     };
   });
@@ -1878,11 +1872,11 @@ function renderAdminStudent(){
   const s = state.adminStudent;
   const today = todayStr();
 
-  const quizHtml = state.adminQuizzes.map(q=>
+  const quizHtml = (state.adminQuizzes||[]).map(q=>
     '<div class="field"><label>'+escapeHtml(q.label)+'</label><div class="num" style="font-size:15px;font-weight:700;color:var(--navy)">'+(state.adminQuizScores[q.slot_no]||'-')+'</div></div>'
   ).join('');
 
-  const perfHtml = state.adminPerfTasks.map(t=>{
+  const perfHtml = (state.adminPerfTasks||[]).map(t=>{
     const crit = state.adminRubricCrit[t.label] || [];
     const scores = state.adminRubricScores[t.label] || {};
     let sum=0, max=0, any=false;
@@ -1891,7 +1885,7 @@ function renderAdminStudent(){
     return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:15px;font-weight:700;color:var(--navy)">'+(grade??'-')+'</div></div>';
   }).join('');
 
-  const hwRows = state.adminHomeworks.map(h=>{
+  const hwRows = (state.adminHomeworks||[]).map(h=>{
     const future = !h.check_date || h.check_date > today;
     const done = !!(state.adminHwStatus[s.id]||{})[h.slot_no];
     const topic = h.topic || ('(Ödev '+h.slot_no+' tanimlanmadi)');
@@ -1908,8 +1902,8 @@ function renderAdminStudent(){
     '<a class="backlink" id="toAdminClass">&lsaquo; '+escapeHtml(state.adminClass.name)+' listesine don</a>' +
     '<div class="infobar" style="background:var(--accent-soft); color:var(--accent); font-weight:700; justify-content:center;">Salt okunur goruntuleme - degisiklik yapilamaz</div>' +
     (s.no ? '<p style="font-size:12.5px; color:var(--ink-soft); margin:8px 0 0;">No: '+escapeHtml(s.no)+'</p>' : '') +
-    (state.adminQuizzes.length ? '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
-    (state.adminPerfTasks.length ? '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
+    ((state.adminQuizzes||[]).length ? '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    ((state.adminPerfTasks||[]).length ? '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     '<div class="sectiontitle"><span>Ödev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+(hwRows||'<div class="empty">Odev yok.</div>')+'</div>' +
     (s.teacher_note ? '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div><div class="card" style="font-size:13.5px; color:var(--ink);">'+escapeHtml(s.teacher_note)+'</div>' : '');
