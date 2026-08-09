@@ -271,6 +271,8 @@ async function startApp(){
   const { data: { user } } = await sb.auth.getUser();
   state.userId = user ? user.id : null;
   state.username = user && user.email ? user.email.split('@')[0] : '';
+  state.userEmail = user ? user.email : '';
+  state.isAdmin = state.userEmail === 'ferit@takip.local';
   await loadClasses();
   if(state.classes.length){
     await loadClass(state.classes[0].name);
@@ -757,8 +759,13 @@ function exportCSV() {
 function render(){
   const $welcomeBar = document.getElementById('welcomeBar');
   if(state.username){
-    $welcomeBar.style.display = 'block';
-    $welcomeBar.textContent = 'Hosgeldin: ' + state.username;
+    $welcomeBar.style.display = 'flex';
+    $welcomeBar.style.justifyContent = 'space-between';
+    $welcomeBar.style.alignItems = 'center';
+    $welcomeBar.innerHTML = '<span>Hosgeldin: '+escapeHtml(state.username)+'</span>' +
+      (state.isAdmin ? '<a class="linklike" id="adminLink" style="font-size:12px;">&#128065; Ogretmenleri Goruntule</a>' : '');
+    const adminLink = document.getElementById('adminLink');
+    if(adminLink) adminLink.onclick = ()=>{ state.view='admin_teachers'; state.classId=null; render(); loadAdminTeachers(); };
   } else {
     $welcomeBar.style.display = 'none';
   }
@@ -766,6 +773,13 @@ function render(){
   renderTopbar();
   if(state.loading){
     $app.innerHTML = '<div class="loading"><div class="spin"></div>Yukleniyor...</div>';
+    return;
+  }
+  if(state.view && state.view.startsWith('admin_')){
+    if(state.view==='admin_teachers') renderAdminTeachers();
+    else if(state.view==='admin_classes') renderAdminClasses();
+    else if(state.view==='admin_class') renderAdminClass();
+    else if(state.view==='admin_student') renderAdminStudent();
     return;
   }
   if(!state.cls){
@@ -784,6 +798,7 @@ function render(){
 }
 
 function renderClassbar(){
+  if(state.view && state.view.startsWith('admin_')){ $classbar.innerHTML = ''; return; }
   $classbar.innerHTML = state.classes.map(c=>
     '<button class="'+(c.name===state.cls&&state.view==='roster'?'active':'')+'" data-cls="'+c.name+'">'+c.name+'</button>'
   ).join('') + '<button data-add="1" style="background:rgba(255,255,255,.3)">+ Sinif</button>';
@@ -798,6 +813,30 @@ function renderClassbar(){
 }
 
 function renderTopbar(){
+  if(state.view==='admin_teachers'){
+    $backBtn.style.visibility='hidden';
+    $topTitle.textContent = 'Ogretmenler';
+    $topSub.textContent = 'Salt okunur goruntuleme';
+    return;
+  }
+  if(state.view==='admin_classes'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = (state.adminTeacher ? state.adminTeacher.username : 'Ogretmen') + ' - Siniflar';
+    $topSub.textContent = 'Salt okunur';
+    return;
+  }
+  if(state.view==='admin_class'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = (state.adminClass ? state.adminClass.name : 'Sinif');
+    $topSub.textContent = 'Salt okunur';
+    return;
+  }
+  if(state.view==='admin_student'){
+    $backBtn.style.visibility='visible';
+    $topTitle.textContent = state.adminStudent ? state.adminStudent.name : '';
+    $topSub.textContent = 'Salt okunur';
+    return;
+  }
   if(!state.cls){
     $backBtn.style.visibility='hidden';
     $topTitle.textContent = 'Odev Kontrol';
@@ -848,6 +887,9 @@ function renderTopbar(){
 $backBtn.onclick = ()=>{ 
   if(state.view==='quick_hw') state.view = state.hwCheckFrom || 'hw_picker';
   else if(state.view==='quick_quiz') state.view = state.quizCheckFrom || 'quiz_picker';
+  else if(state.view==='admin_student') { state.view='admin_class'; render(); return; }
+  else if(state.view==='admin_class') { state.view='admin_classes'; render(); return; }
+  else if(state.view==='admin_classes') { state.view='admin_teachers'; render(); return; }
   else state.view='roster'; 
   render(); 
 };
@@ -1558,6 +1600,196 @@ function ensureFab(label, onClick){
 function removeFab(){
   if(fabEl){ fabEl.remove(); fabEl=null; }
 }
+
+// ================= ADMIN (godmode) - SADECE GORUNTULEME =================
+async function loadAdminTeachers(){
+  state.loading = true; render();
+  const { data, error } = await sb.from('profiles').select('*').order('username');
+  if(error){ console.error('loadAdminTeachers', error); }
+  state.adminTeachers = data || [];
+  state.loading = false;
+  render();
+}
+
+function renderAdminTeachers(){
+  removeFab();
+  const rows = state.adminTeachers.map(t=>
+    '<div class="card studentcard" data-teacher="'+t.id+'" data-uname="'+escapeHtml(t.username||'')+'">' +
+      '<div class="name">'+escapeHtml(t.username||'(isimsiz)')+'</div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toAppRoot">&lsaquo; Uygulamaya don</a>' +
+    '<div class="sectiontitle"><span>Ogretmenler</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Henuz kullanici yok.</div>');
+  document.getElementById('toAppRoot').onclick = ()=>{ state.view='roster'; render(); };
+  $app.querySelectorAll('[data-teacher]').forEach(el=>{
+    el.onclick = ()=>{
+      state.adminTeacher = { id: el.dataset.teacher, username: el.dataset.uname };
+      state.view = 'admin_classes';
+      render();
+      loadAdminClasses(el.dataset.teacher);
+    };
+  });
+}
+
+async function loadAdminClasses(teacherId){
+  state.loading = true; render();
+  const { data } = await sb.from('classes').select('*').eq('owner_id', teacherId).order('sort_order');
+  state.adminClasses = data || [];
+  state.loading = false;
+  render();
+}
+
+function renderAdminClasses(){
+  removeFab();
+  const rows = state.adminClasses.map(c=>
+    '<div class="card studentcard" data-class="'+c.id+'" data-cname="'+escapeHtml(c.name)+'">' +
+      '<div class="name">'+escapeHtml(c.name)+'</div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toAdminTeachers">&lsaquo; Ogretmenler listesine don</a>' +
+    '<div class="sectiontitle"><span>'+escapeHtml(state.adminTeacher.username)+' - Siniflar</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Bu ogretmenin henuz sinifi yok.</div>');
+  document.getElementById('toAdminTeachers').onclick = ()=>{ state.view='admin_teachers'; render(); };
+  $app.querySelectorAll('[data-class]').forEach(el=>{
+    el.onclick = ()=>{
+      state.adminClass = { id: el.dataset.class, name: el.dataset.cname };
+      state.view = 'admin_class';
+      render();
+      loadAdminClassDetail(el.dataset.class);
+    };
+  });
+}
+
+async function loadAdminClassDetail(classId){
+  state.loading = true; render();
+  const { data: students } = await sb.from('students').select('*').eq('class_id', classId).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id', classId).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows = [];
+  if(ids.length){
+    const r = await sb.from('homework_status').select('*').in('student_id', ids);
+    hwStatusRows = r.data || [];
+  }
+  const hwStatus = {};
+  for(const row of hwStatusRows){
+    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
+    hwStatus[row.student_id][row.slot_no] = row.done;
+  }
+  state.adminStudents = students || [];
+  state.adminHomeworks = homeworks || [];
+  state.adminHwStatus = hwStatus;
+  state.loading = false;
+  render();
+}
+
+function renderAdminClass(){
+  removeFab();
+  const today = todayStr();
+  const assigned = state.adminHomeworks.filter(h=>h.check_date && h.check_date<=today).length;
+  const rows = state.adminStudents.map(s=>{
+    const st = state.adminHwStatus[s.id] || {};
+    let done = 0;
+    state.adminHomeworks.forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) done++; });
+    const p = assigned>0 ? Math.round((done/assigned)*100) : 0;
+    return '<div class="card studentcard" data-student="'+s.id+'">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name">'+escapeHtml(s.name)+'</div>' +
+      '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>';
+  }).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toAdminClasses">&lsaquo; '+escapeHtml(state.adminTeacher.username)+' siniflarina don</a>' +
+    '<div class="infobar"><div>Bugune kadar verilen odev: <b class="num">'+assigned+'</b> / '+state.adminHomeworks.length+'</div></div>' +
+    '<div class="sectiontitle"><span>Ogrenciler (salt okunur)</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Ogrenci yok.</div>');
+  document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
+  $app.querySelectorAll('[data-student]').forEach(el=>{
+    el.onclick = ()=>{
+      state.adminStudent = state.adminStudents.find(s=>s.id===el.dataset.student);
+      state.view = 'admin_student';
+      render();
+      loadAdminStudentDetail(el.dataset.student);
+    };
+  });
+}
+
+async function loadAdminStudentDetail(studentId){
+  state.loading = true; render();
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id', state.adminClass.id).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id', state.adminClass.id).order('slot_no');
+  const { data: quizScoreRows } = await sb.from('quiz_scores').select('*').eq('student_id', studentId);
+  const { data: rubricScoreRows } = await sb.from('rubric_scores').select('*').eq('student_id', studentId);
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_id', state.adminClass.id);
+
+  const quizScores = {};
+  (quizScoreRows||[]).forEach(r=>{ quizScores[r.slot_no] = r.score; });
+  const rubricCrit = {};
+  (rubricRows||[]).forEach(r=>{ rubricCrit[r.level] = r.criteria; });
+  const rubricScores = {};
+  (rubricScoreRows||[]).forEach(r=>{
+    rubricScores[r.level] = rubricScores[r.level] || {};
+    rubricScores[r.level][r.criteria_index] = r.score;
+  });
+
+  state.adminQuizzes = quizzes || [];
+  state.adminPerfTasks = perfTasks || [];
+  state.adminQuizScores = quizScores;
+  state.adminRubricCrit = rubricCrit;
+  state.adminRubricScores = rubricScores;
+  state.loading = false;
+  render();
+}
+
+function renderAdminStudent(){
+  removeFab();
+  const s = state.adminStudent;
+  const today = todayStr();
+
+  const quizHtml = state.adminQuizzes.map(q=>
+    '<div class="field"><label>'+escapeHtml(q.label)+'</label><div class="num" style="font-size:15px;font-weight:700;color:var(--navy)">'+(state.adminQuizScores[q.slot_no]||'-')+'</div></div>'
+  ).join('');
+
+  const perfHtml = state.adminPerfTasks.map(t=>{
+    const crit = state.adminRubricCrit[t.label] || [];
+    const scores = state.adminRubricScores[t.label] || {};
+    let sum=0, max=0, any=false;
+    crit.forEach((c,i)=>{ max+=c.max; if(scores[i]!=null){ sum+=scores[i]; any=true; } });
+    const grade = any ? Math.round(sum/max*100) : null;
+    return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:15px;font-weight:700;color:var(--navy)">'+(grade??'-')+'</div></div>';
+  }).join('');
+
+  const hwRows = state.adminHomeworks.map(h=>{
+    const future = !h.check_date || h.check_date > today;
+    const done = !!(state.adminHwStatus[s.id]||{})[h.slot_no];
+    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
+    return '<div class="hwrow '+(future?'future':'')+'">' +
+      '<div class="topic"><div class="t">'+escapeHtml(topic)+'</div>' +
+        '<div class="d">'+(h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'')+(h.check_date?(' &middot; Kontrol: '+fmtDate(h.check_date)):'')+'</div></div>' +
+      '<div style="width:50px; height:30px; border-radius:999px; background:'+(done?'var(--good)':'#dcdad2')+'; position:relative; flex-shrink:0;">' +
+        '<span style="position:absolute; top:3px; '+(done?'left:23px':'left:3px')+'; width:24px; height:24px; border-radius:50%; background:#fff;"></span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  $app.innerHTML =
+    '<a class="backlink" id="toAdminClass">&lsaquo; '+escapeHtml(state.adminClass.name)+' listesine don</a>' +
+    '<div class="infobar" style="background:var(--accent-soft); color:var(--accent); font-weight:700; justify-content:center;">Salt okunur goruntuleme - degisiklik yapilamaz</div>' +
+    (s.no ? '<p style="font-size:12.5px; color:var(--ink-soft); margin:8px 0 0;">No: '+escapeHtml(s.no)+'</p>' : '') +
+    (state.adminQuizzes.length ? '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    (state.adminPerfTasks.length ? '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
+    '<div class="sectiontitle"><span>Odev Gecmisi</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows||'<div class="empty">Odev yok.</div>')+'</div>' +
+    (s.teacher_note ? '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div><div class="card" style="font-size:13.5px; color:var(--ink);">'+escapeHtml(s.teacher_note)+'</div>' : '');
+
+  document.getElementById('toAdminClass').onclick = ()=>{ state.view='admin_class'; render(); };
+}
+// ================= /ADMIN =================
 
 function escapeHtml(str){
   return String(str==null?'':str).replace(/[&<>"']/g, function(m){
