@@ -194,3 +194,188 @@ const $logoutLink = document.getElementById('logoutLink');
 
 function showToast(msg){
   $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>$toast.classList.remove('show'), 1600);
+}
+
+function fmtDate(d){
+  if(!d) return null;
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtDateTime(ts){
+  if(!ts) return null;
+  const dt = new Date(ts);
+  return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+}
+function todayStr(){
+  const t = new Date();
+  return t.toISOString().slice(0,10);
+}
+
+// ================= AUTH =================
+function toEmail(username){
+  username = username.trim();
+  if(username.includes('@')) return username;
+  return username + '@takip.local';
+}
+
+async function doLogin(username, password){
+  const $err = document.getElementById('loginErr');
+  const $btn = document.getElementById('loginBtn');
+  $err.textContent = '';
+  $btn.textContent = 'Giris yapiliyor...';
+  $btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: toEmail(username), password });
+  if(error){
+    $err.textContent = 'Kullanici adi veya sifre hatali.';
+    $btn.textContent = 'Giris Yap';
+    $btn.disabled = false;
+    return;
+  }
+  await startApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  $logoutLink.style.display = 'none';
+  state.username = '';
+  document.getElementById('welcomeBar').style.display = 'none';
+  state.cls = null; state.classId = null; state.classes = []; state.students = [];
+  renderLogin();
+}
+
+function renderLogin(){
+  $classbar.innerHTML = '';
+  $topTitle.textContent = 'Ödev Kontrol';
+  $topSub.textContent = '';
+  $backBtn.style.visibility = 'hidden';
+  $app.innerHTML =
+    '<div class="loginwrap"><div class="loginbox">' +
+      '<h2>Giris Yap</h2>' +
+      '<p class="sub">Odev Kontrol uygulamasina erismek icin giris yapin</p>' +
+      '<label>Kullanici Adi</label>' +
+      '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
+      '<label>Sifre</label>' +
+      '<input type="password" id="loginPass">' +
+      '<button id="loginBtn">Giris Yap</button>' +
+      '<div class="err" id="loginErr"></div>' +
+    '</div></div>';
+  const $user = document.getElementById('loginUser');
+  const $pass = document.getElementById('loginPass');
+  const submit = ()=> doLogin($user.value, $pass.value);
+  document.getElementById('loginBtn').onclick = submit;
+  $user.addEventListener('keydown', e=>{ if(e.key==='Enter') $pass.focus(); });
+  $pass.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$user.focus(), 50);
+}
+
+async function startApp(){
+  $logoutLink.style.display = 'inline';
+  const { data: { user } } = await sb.auth.getUser();
+  state.userId = user ? user.id : null;
+  state.username = user && user.email ? user.email.split('@')[0] : '';
+  state.userEmail = user ? user.email : '';
+  state.isAdmin = state.userEmail === 'ferit@takip.local';
+  if(state.isAdmin){
+    state.view = 'admin_teachers';
+    state.loading = false;
+    render();
+    await loadAdminTeachers();
+    return;
+  }
+  await loadClasses();
+  if(state.classes.length){
+    await loadClass(state.classes[0].name);
+  } else {
+    state.loading = false;
+    render();
+  }
+}
+
+$logoutLink.onclick = doLogout;
+// ================= /AUTH =================
+
+async function logActivity(description){
+  if(!state.userId || state.isAdmin) return;
+  try{
+    await sb.from('activity_log').insert({ user_id: state.userId, class_name: state.cls || null, description });
+  }catch(e){ console.error('logActivity error', e); }
+}
+
+async function loadClasses(){
+  const { data } = await sb.from('classes').select('*').order('sort_order');
+  state.classes = data || [];
+  return state.classes;
+}
+async function addClass(name){
+  name = name.trim();
+  if(!name) return;
+  if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    showToast('Bu sinif zaten var'); return;
+  }
+  const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+  const { data, error } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
+  if(error){ showToast('HATA: '+error.message); console.error('addClass error', error); return; }
+  if(data && data[0]) state.classes.push(data[0]);
+  await loadClass(name);
+  logActivity('"'+name+'" sinifini olusturdu');
+}
+async function renameClass(oldName, newName){
+  newName = newName.trim();
+  if(!newName || newName===oldName) return;
+  const c = state.classes.find(x=>x.name===oldName);
+  if(!c) return;
+  c.name = newName;
+  await sb.from('classes').update({name:newName}).eq('id', c.id);
+  state.cls = newName;
+  render();
+  showToast('Sinif adi guncellendi');
+  logActivity('"'+oldName+'" sinifini "'+newName+'" olarak yeniden adlandirdi');
+}
+async function deleteClass(name){
+  const c = state.classes.find(x=>x.name===name);
+  state.classes = state.classes.filter(x=>x.name!==name);
+  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, odevler, quizler, rubrikler...
+  showToast('Sinif silindi');
+  logActivity('"'+name+'" sinifini sildi');
+  const next = state.classes[0];
+  if(next) await loadClass(next.name);
+  else { state.cls=null; state.classId=null; state.students=[]; state.homeworks=[]; state.loading=false; render(); }
+}
+
+async function loadClass(cls){
+  state.loading = true; render();
+  const classObj = state.classes.find(c=>c.name===cls);
+  if(!classObj){ state.loading=false; render(); return; }
+  const classId = classObj.id;
+  const { data: students } = await sb.from('students').select('*').eq('class_id',classId).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id',classId).order('slot_no');
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows = [];
+  let rubricScoreRows = [];
+  let quizScoreRows = [];
+  if(ids.length){
+    const r1 = await sb.from('homework_status').select('*').in('student_id', ids);
+    hwStatusRows = r1.data || [];
+    const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids);
+    rubricScoreRows = r2.data || [];
+    const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids);
+    quizScoreRows = r3.data || [];
+  }
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_id', classId);
+
+  const hwStatus = {};
+  for(const row of hwStatusRows){
+    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
+    hwStatus[row.student_id][row.slot_no] = row.done;
+  }
+  const rubricScores = {};
+  for(const row of rubricScoreRows){
+    rubricScores[row.student_id] = rubricScores[row.student_id] || {};
+    rubricScores[row.student_id][row.level] = rubricScores[row.student_id][row.level] || {};
+    rubricScores[row.student_id][row.level][row.criteria_index] = row.score;
+  }
