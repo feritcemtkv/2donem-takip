@@ -1045,6 +1045,12 @@ function renderRoster(){
       '<button id="quizEditBtn" style="flex:1; border:none; background:var(--navy-soft); color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Quizleri Duzenle</button>' +
       '<button id="quizEnterBtn" style="flex:1; border:none; background:var(--navy); color:#fff; padding:11px; border-radius:10px; font-weight:700; font-size:13px;">Quiz Not Gir</button>' +
     '</div>' +
+    '<div class="sectiontitle"><span>Performans Ödevi</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
+      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans ödevi yok.</div>' : '') +
+    '</div>' +
+    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px; margin-bottom:14px;">+ Yeni Performans Ödevi Ekle</button>' +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
     '<div style="display:flex; gap:6px; margin-bottom:10px;">' +
       '<button id="sortNo" style="flex:1; border:none; padding:6px; border-radius:999px; font-size:12.5px; font-weight:700; background:'+(state.sortBy==='no'?'var(--navy)':'var(--navy-soft)')+'; color:'+(state.sortBy==='no'?'#fff':'var(--navy)')+';">Numaraya gore</button>' +
@@ -1053,12 +1059,6 @@ function renderRoster(){
     '<div id="rosterList"></div>' +
     '<button id="excelImportBtn" style="width:100%; border:1px dashed var(--navy); background:#fff; color:var(--navy); padding:11px; border-radius:10px; font-weight:700; font-size:13px; margin-top:10px;">&#128228; Excelden Ogrenci Listesi Yukle</button>' +
     '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
-    '<div class="sectiontitle" style="margin-top:26px;"><span>Performans Ödevi</span><span class="line"></span></div>' +
-    '<div class="card" style="display:flex; gap:8px; flex-wrap:wrap;">' +
-      state.perfTasks.map(t=>'<button class="levelpicker-btn" data-lvl="'+escapeHtml(t.label)+'" style="flex:1; min-width:80px; border:none; background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700;">'+escapeHtml(t.label)+'</button>').join('') +
-      (state.perfTasks.length===0 ? '<div class="empty" style="width:100%;">Henuz performans ödevi yok.</div>' : '') +
-    '</div>' +
-    '<button id="addPerfBtn2" style="width:100%; border:1px dashed var(--navy); background:var(--navy-soft); color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:13.5px; margin-top:8px;">+ Yeni Performans Ödevi Ekle</button>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Sınıf Islemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:10px;">' +
       '<button id="renameClsBtn" style="flex:1; border:1px solid var(--line); background:#fff; color:var(--navy); padding:12px; border-radius:10px; font-weight:700; font-size:14px;">Sınıf Adini Duzenle</button>' +
