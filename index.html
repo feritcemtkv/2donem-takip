@@ -1768,24 +1768,49 @@ async function loadAdminClasses(teacherId){
   render();
 }
 
-function renderAdminClasses(){
+function renderAdminClass(){
   removeFab();
-  const rows = (state.adminClasses||[]).map(c=>
-    '<div class="card studentcard" data-class="'+c.id+'" data-cname="'+escapeHtml(c.name)+'">' +
-      '<div class="name">'+escapeHtml(c.name)+'</div>' +
-      '<div class="chev">&rsaquo;</div>' +
-    '</div>'
+  const today = todayStr();
+  const assigned = (state.adminHomeworks||[]).filter(h=>h.check_date && h.check_date<=today).length;
+  const hwRows = (state.adminHomeworks||[]).map(h=>{
+    const checked = h.check_date && h.check_date<=today;
+    return '<div class="hwrow">' +
+      '<div class="topic">' +
+        '<div class="t">'+escapeHtml(h.topic || ('(Odev #'+h.slot_no+' tanimlanmadi)'))+'</div>' +
+        '<div class="d">'+(h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'Verilis tarihi yok')+' &middot; '+(h.check_date?('Kontrol: '+fmtDate(h.check_date)):'Kontrol tarihi yok')+(checked?'':' (henuz gelmedi)')+'</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  const perfRows = (state.adminPerfTasks||[]).map(t=>
+    '<div class="card" style="padding:10px 14px; margin-bottom:6px;"><div class="name" style="font-weight:600;">'+escapeHtml(t.label)+'</div></div>'
   ).join('');
+  const rows = (state.adminStudents||[]).map(s=>{
+    const st = state.adminHwStatus[s.id] || {};
+    let done = 0;
+    (state.adminHomeworks||[]).forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) done++; });
+    const p = assigned>0 ? Math.round((done/assigned)*100) : 0;
+    return '<div class="card studentcard" data-student="'+s.id+'">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name">'+escapeHtml(s.name)+'</div>' +
+      '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>';
+  }).join('');
   $app.innerHTML =
-    '<a class="backlink" id="toAdminTeachers">&lsaquo; Ögretmenler listesine don</a>' +
-    '<div class="sectiontitle"><span>'+escapeHtml(state.adminTeacher.username)+' - Sınıflar</span><span class="line"></span></div>' +
-    (rows || '<div class="empty">Bu ögretmenin henuz sınıfı yok.</div>');
-  document.getElementById('toAdminTeachers').onclick = ()=>{ state.view='admin_teachers'; render(); };
-  $app.querySelectorAll('[data-class]').forEach(el=>{
+    '<a class="backlink" id="toAdminClasses">&lsaquo; '+escapeHtml(state.adminTeacher.username)+' sınıflarına don</a>' +
+    '<div class="infobar"><div>Bugune kadar verilen ödev: <b class="num">'+assigned+'</b> / '+(state.adminHomeworks||[]).length+'</div></div>' +
+    '<div class="sectiontitle"><span>Ödevler</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows || '<div class="empty">Henuz ödev tanimlanmadi.</div>')+'</div>' +
+    '<div class="sectiontitle"><span>Performans Ödevleri</span><span class="line"></span></div>' +
+    (perfRows || '<div class="empty">Henuz performans ödevi tanimlanmadi.</div>') +
+    '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Ogrenci yok.</div>');
+  document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
+  $app.querySelectorAll('[data-student]').forEach(el=>{
     el.onclick = ()=>{
-      state.adminClass = { id: el.dataset.class, name: el.dataset.cname };
-      state.view = 'admin_class';
-      loadAdminClassDetail(el.dataset.class);
+      state.adminStudent = state.adminStudents.find(s=>s.id===el.dataset.student);
+      state.view = 'admin_student';
+      loadAdminStudentDetail(el.dataset.student);
     };
   });
 }
@@ -1794,6 +1819,7 @@ async function loadAdminClassDetail(classId){
   state.loading = true; render();
   const { data: students } = await sb.from('students').select('*').eq('class_id', classId).order('sort_order');
   const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id', classId).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id', classId).order('slot_no');
   const ids = (students||[]).map(s=>s.id);
   let hwStatusRows = [];
   if(ids.length){
@@ -1807,6 +1833,7 @@ async function loadAdminClassDetail(classId){
   }
   state.adminStudents = students || [];
   state.adminHomeworks = homeworks || [];
+  state.adminPerfTasks = perfTasks || [];
   state.adminHwStatus = hwStatus;
   state.loading = false;
   render();
