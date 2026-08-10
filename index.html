@@ -147,7 +147,7 @@
     <h1 id="topTitle">Ödev Kontrol</h1>
     <div class="sub" id="topSub"></div>
   </div>
-  <a class="logoutlink" id="logoutLink" style="display:none;">Çıkış</a>
+  <a class="logoutlink" id="logoutLink" style="display:none;">Cikis</a>
 </header>
 <div id="welcomeBar" style="display:none; background:#fff; padding:8px 16px; font-size:12.5px; color:var(--ink-soft); border-bottom:1px solid var(--line);"></div>
 <div class="classbar" id="classbar"></div>
@@ -263,15 +263,82 @@ function renderLogin(){
       '<label>Sifre</label>' +
       '<input type="password" id="loginPass">' +
       '<button id="loginBtn">Giris Yap</button>' +
+      '<a class="linklike" id="forgotLink" style="display:block; text-align:center; margin-top:14px; font-size:13px;">Sifremi Unuttum</a>' +
       '<div class="err" id="loginErr"></div>' +
     '</div></div>';
   const $user = document.getElementById('loginUser');
   const $pass = document.getElementById('loginPass');
   const submit = ()=> doLogin($user.value, $pass.value);
   document.getElementById('loginBtn').onclick = submit;
+  document.getElementById('forgotLink').onclick = renderForgotPassword;
   $user.addEventListener('keydown', e=>{ if(e.key==='Enter') $pass.focus(); });
   $pass.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
   setTimeout(()=>$user.focus(), 50);
+}
+
+function renderForgotPassword(){
+  $classbar.innerHTML = '';
+  $topTitle.textContent = 'Ödev Kontrol';
+  $topSub.textContent = '';
+  $backBtn.style.visibility = 'hidden';
+  $app.innerHTML =
+    '<div class="loginwrap"><div class="loginbox">' +
+      '<h2>Sifremi Unuttum</h2>' +
+      '<p class="sub">Kayitli e-posta adresini gir, sana sifre sifirlama baglantisi gonderelim</p>' +
+      '<label>E-posta</label>' +
+      '<input type="email" id="resetEmail" autocapitalize="none" autocorrect="off">' +
+      '<button id="resetBtn">Baglanti Gonder</button>' +
+      '<div class="err" id="resetErr"></div>' +
+      '<a class="linklike" id="backToLogin" style="display:block; text-align:center; margin-top:14px; font-size:13px;">Giris ekranina don</a>' +
+    '</div></div>';
+  const $email = document.getElementById('resetEmail');
+  const $btn = document.getElementById('resetBtn');
+  const $err = document.getElementById('resetErr');
+  $btn.onclick = async ()=>{
+    const email = $email.value.trim();
+    if(!email){ $err.textContent = 'E-posta gerekli.'; return; }
+    $btn.textContent = 'Gonderiliyor...';
+    $btn.disabled = true;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+    $btn.textContent = 'Baglanti Gonder';
+    $btn.disabled = false;
+    if(error){
+      $err.textContent = 'Hata: ' + error.message;
+    } else {
+      $err.style.color = 'var(--good)';
+      $err.textContent = 'Baglanti gonderildi, e-postani kontrol et.';
+    }
+  };
+  document.getElementById('backToLogin').onclick = renderLogin;
+}
+
+function renderSetNewPassword(){
+  $classbar.innerHTML = '';
+  $topTitle.textContent = 'Ödev Kontrol';
+  $topSub.textContent = '';
+  $backBtn.style.visibility = 'hidden';
+  $app.innerHTML =
+    '<div class="loginwrap"><div class="loginbox">' +
+      '<h2>Yeni Sifre Belirle</h2>' +
+      '<p class="sub">Hesabin icin yeni bir sifre gir</p>' +
+      '<label>Yeni Sifre</label>' +
+      '<input type="password" id="newPass1">' +
+      '<label>Yeni Sifre (Tekrar)</label>' +
+      '<input type="password" id="newPass2">' +
+      '<button id="setPassBtn">Sifreyi Kaydet</button>' +
+      '<div class="err" id="setPassErr"></div>' +
+    '</div></div>';
+  document.getElementById('setPassBtn').onclick = async ()=>{
+    const p1 = document.getElementById('newPass1').value;
+    const p2 = document.getElementById('newPass2').value;
+    const $err = document.getElementById('setPassErr');
+    if(!p1 || p1.length < 6){ $err.textContent = 'Sifre en az 6 karakter olmali.'; return; }
+    if(p1 !== p2){ $err.textContent = 'Sifreler eslesmiyor.'; return; }
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if(error){ $err.textContent = 'Hata: ' + error.message; return; }
+    showToast('Sifre guncellendi, giris yapabilirsin');
+    await startApp();
+  };
 }
 
 async function startApp(){
@@ -338,7 +405,7 @@ async function renameClass(oldName, newName){
 async function deleteClass(name){
   const c = state.classes.find(x=>x.name===name);
   state.classes = state.classes.filter(x=>x.name!==name);
-  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, ödevler, quizler, rubrikler...
+  if(c) await sb.from('classes').delete().eq('id', c.id); // cascade siler: ogrenciler, odevler, quizler, rubrikler...
   showToast('Sınıf silindi');
   logActivity('"'+name+'" sınıfını sildi');
   const next = state.classes[0];
@@ -454,8 +521,8 @@ async function toggleHw(studentId, slotNo){
   await sb.from('homework_status').upsert({student_id:studentId, slot_no:slotNo, done: next});
   const s = studentById(studentId);
   const hw = state.homeworks.find(h=>h.slot_no===slotNo);
-  const hwLabel = hw && hw.topic ? hw.topic : ('Ödev #'+slotNo);
-  if(s) logActivity('"'+s.name+'" - "'+hwLabel+'" ödevini '+(next?'yapti':'yapmadi')+' olarak isaretledi');
+  const hwLabel = hw && hw.topic ? hw.topic : ('Odev #'+slotNo);
+  if(s) logActivity('"'+s.name+'" - "'+hwLabel+'" odevini '+(next?'yapti':'yapmadi')+' olarak isaretledi');
 }
 async function updateStudentField(studentId, field, value){
   const s = studentById(studentId);
@@ -463,7 +530,7 @@ async function updateStudentField(studentId, field, value){
   await sb.from('students').update({[field]: value}).eq('id', studentId);
   showToast('Kaydedildi');
   if(s){
-    const fieldLabel = field==='no' ? 'numarasini' : (field==='teacher_note' ? 'ögretmen notunu' : field);
+    const fieldLabel = field==='no' ? 'numarasini' : (field==='teacher_note' ? 'ogretmen notunu' : field);
     logActivity('"'+s.name+'" ogrencisinin '+fieldLabel+' guncelledi');
   }
 }
@@ -621,7 +688,7 @@ async function updateHomework(slotNo, field, value){
   await sb.from('homeworks').update({[field]: value}).eq('class_id', state.classId).eq('slot_no', slotNo);
   if(hw){
     const fieldLabel = field==='topic' ? 'konusunu' : (field==='hw_date' ? 'verilis tarihini' : (field==='check_date' ? 'kontrol tarihini' : field));
-    logActivity('"'+(hw.topic||('Ödev #'+slotNo))+'" ödevinin '+fieldLabel+' guncelledi');
+    logActivity('"'+(hw.topic||('Odev #'+slotNo))+'" odevinin '+fieldLabel+' guncelledi');
   }
 }
 async function addHomework(){
@@ -630,12 +697,12 @@ async function addHomework(){
   const { data } = await sb.from('homeworks').insert({class_id:state.classId, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
   if(data && data[0]) state.homeworks.push(data[0]);
   render();
-  showToast('Ödev eklendi');
-  logActivity('Yeni ödev ekledi (#'+nextSlot+')');
+  showToast('Odev eklendi');
+  logActivity('Yeni odev ekledi (#'+nextSlot+')');
 }
 async function deleteHomework(slotNo){
   const hwObj = state.homeworks.find(h=>h.slot_no===slotNo);
-  const hwLabel = hwObj && hwObj.topic ? hwObj.topic : ('Ödev #'+slotNo);
+  const hwLabel = hwObj && hwObj.topic ? hwObj.topic : ('Odev #'+slotNo);
   state.homeworks = state.homeworks.filter(h=>h.slot_no!==slotNo);
   render();
   const { data: students } = await sb.from('students').select('id').eq('class_id', state.classId);
@@ -644,8 +711,8 @@ async function deleteHomework(slotNo){
     await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
   }
   await sb.from('homeworks').delete().eq('class_id', state.classId).eq('slot_no', slotNo);
-  showToast('Ödev silindi');
-  logActivity('"'+hwLabel+'" ödevini sildi');
+  showToast('Odev silindi');
+  logActivity('"'+hwLabel+'" odevini sildi');
 }
 async function importStudentsFromExcel(file){
   if(!file) return;
@@ -770,8 +837,8 @@ function exportCSV() {
   let headers = ['No', 'Ad Soyad', 'Durum'];
   state.quizzes.forEach(q => headers.push(q.label));
   state.perfTasks.forEach(t => headers.push(t.label));
-  headers.push('Ödev Durumu (%)');
-  headers.push('Ögretmen Notu');
+  headers.push('Odev Durumu (%)');
+  headers.push('Ogretmen Notu');
   csv += headers.join(';') + '\n';
   
   const sorted = [...state.students].sort((a,b)=>{
@@ -825,7 +892,7 @@ function render(){
     $welcomeBar.style.justifyContent = 'space-between';
     $welcomeBar.style.alignItems = 'center';
     $welcomeBar.innerHTML = '<span>Hosgeldin: '+escapeHtml(state.username)+'</span>' +
-      (state.isAdmin ? '<a class="linklike" id="adminLink" style="font-size:12px;">&#128065; Ögretmenleri Goruntule</a>' : '');
+      (state.isAdmin ? '<a class="linklike" id="adminLink" style="font-size:12px;">&#128065; Öğretmenleri Görüntüle</a>' : '');
     const adminLink = document.getElementById('adminLink');
     if(adminLink) adminLink.onclick = ()=>{ state.view='admin_teachers'; state.classId=null; loadAdminTeachers(); };
   } else {
@@ -878,32 +945,32 @@ function renderClassbar(){
 function renderTopbar(){
   if(state.view==='admin_teachers'){
     $backBtn.style.visibility='hidden';
-    $topTitle.textContent = 'Ögretmenler';
-    $topSub.textContent = 'Salt okunur goruntuleme';
+    $topTitle.textContent = 'Öğretmenler';
+    $topSub.textContent = '';
     return;
   }
   if(state.view==='admin_classes'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = (state.adminTeacher ? state.adminTeacher.username : 'Ögretmen') + ' - Sınıflar';
-    $topSub.textContent = 'Salt okunur';
+    $topTitle.textContent = (state.adminTeacher ? state.adminTeacher.username : 'Öğretmen') + ' - Sınıflar';
+    $topSub.textContent = '';
     return;
   }
   if(state.view==='admin_class'){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = (state.adminClass ? state.adminClass.name : 'Sınıf');
-    $topSub.textContent = 'Salt okunur';
+    $topSub.textContent = '';
     return;
   }
   if(state.view==='admin_student'){
     $backBtn.style.visibility='visible';
     $topTitle.textContent = state.adminStudent ? state.adminStudent.name : '';
-    $topSub.textContent = 'Salt okunur';
+    $topSub.textContent = '';
     return;
   }
   if(state.view==='admin_activity'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = (state.adminTeacher ? state.adminTeacher.username : 'Ögretmen') + ' - Aktiviteler';
-    $topSub.textContent = 'Salt okunur';
+    $topTitle.textContent = (state.adminTeacher ? state.adminTeacher.username : 'Öğretmen') + ' - Aktiviteler';
+    $topSub.textContent = '';
     return;
   }
   if(!state.cls){
@@ -949,7 +1016,7 @@ function renderTopbar(){
     $topSub.textContent = q ? q.label : state.cls;
   } else if(state.view==='rubric'){
     $backBtn.style.visibility='visible';
-    $topTitle.textContent = 'Performans Ödevi';
+    $topTitle.textContent = 'Performans Odevi';
     $topSub.textContent = state.cls + ' - ' + state.rubricLevel;
   }
 }
@@ -1011,7 +1078,7 @@ function renderRoster(){
   document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
   document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
   document.getElementById('addPerfBtn2').onclick = ()=>{
-    const label = prompt('Yeni performans ödevinin adi (orn. Performans 4):');
+    const label = prompt('Yeni performans odevinin adi (orn. Performans 4):');
     if(label && label.trim()) addPerfTask(label.trim());
   };
   document.getElementById('renameClsBtn').onclick = ()=>{
@@ -1189,7 +1256,7 @@ function renderStudent(){
   const hwRows = state.homeworks.map(h=>{
     const future = !h.check_date || h.check_date > today;
     const done = !!(state.hwStatus[s.id]||{})[h.slot_no];
-    const topic = h.topic || ('(Ödev '+h.slot_no+' tanimlanmadi)');
+    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
     const dateLine = (h.hw_date ? ('Verildi: '+fmtDate(h.hw_date)) : 'Verilis tarihi yok') +
       ' &middot; ' + (h.check_date ? ('Kontrol: '+fmtDate(h.check_date)) : 'Kontrol tarihi yok');
     return '<div class="hwrow '+(future?'future':'')+'">' +
@@ -1237,7 +1304,7 @@ function renderStudent(){
       : '') +
     '<div class="sectiontitle"><span>Ödev Gecmisi</span><span class="line"></span></div>' +
     '<div class="card">'+hwRows+'</div>' +
-    '<div class="sectiontitle"><span>Ögretmen Notu</span><span class="line"></span></div>' +
+    '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div>' +
     '<textarea class="note" id="noteBox" placeholder="Gozlem, veli gorusmesi notu...">'+(s.teacher_note||'')+'</textarea>' +
     '<div class="sectiontitle" style="margin-top:26px;"><span>Ogrenci Islemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex; gap:10px;">' +
@@ -1276,7 +1343,7 @@ function renderHwPicker(){
   const rows = state.homeworks.map(h=>{
     const checked = h.check_date && h.check_date <= today;
     return '<div class="card studentcard" data-pick="'+h.slot_no+'">' +
-      '<div class="name">'+escapeHtml(h.topic || ('Ödev #'+h.slot_no))+
+      '<div class="name">'+escapeHtml(h.topic || ('Odev #'+h.slot_no))+
         '<div style="font-size:11.5px; color:var(--ink-soft); font-weight:400;">Kontrol: '+(h.check_date?fmtDate(h.check_date):'belirtilmemis')+(checked?'':' (henuz gelmedi)')+'</div></div>' +
       '<div class="chev">&rsaquo;</div>' +
     '</div>';
@@ -1685,15 +1752,15 @@ async function deleteTeacherProfile(teacherId, username){
   const { data: classes, error: ce } = await sb.from('classes').select('id').eq('owner_id', teacherId);
   if(ce){ showToast('Hata: '+ce.message); return; }
   if(classes && classes.length){
-    alert('"'+username+'" adli ögretmenin '+classes.length+' sınıfı var. Sınıfı olan ögretmenler silinemez.');
+    alert('"'+username+'" adli öğretmenin '+classes.length+' sınıfı var. Sınıfı olan öğretmenler silinemez.');
     return;
   }
-  if(!confirm('"'+username+'" adli ögretmen profili silinsin mi? Bu islem geri alinamaz.')) return;
+  if(!confirm('"'+username+'" adli öğretmen profili silinsin mi? Bu islem geri alinamaz.')) return;
   const { error } = await sb.from('profiles').delete().eq('id', teacherId);
   if(error){ showToast('Hata: '+error.message); return; }
   state.adminTeachers = state.adminTeachers.filter(t=>t.id!==teacherId);
   render();
-  showToast('Ögretmen profili silindi');
+  showToast('Öğretmen profili silindi');
 }
 
 function renderAdminTeachers(){
@@ -1709,7 +1776,7 @@ function renderAdminTeachers(){
   ).join('');
   $app.innerHTML =
     '<a class="backlink" id="toAppRoot">&lsaquo; Uygulamaya don</a>' +
-    '<div class="sectiontitle"><span>Ögretmenler</span><span class="line"></span></div>' +
+    '<div class="sectiontitle"><span>Öğretmenler</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Henuz kullanici yok.</div>');
   document.getElementById('toAppRoot').onclick = ()=>{ state.view='roster'; render(); };
   $app.querySelectorAll('[data-teacher]').forEach(el=>{
@@ -1754,7 +1821,7 @@ function renderAdminActivity(){
     '</div>'
   ).join('');
   $app.innerHTML =
-    '<a class="backlink" id="toAdminTeachers3">&lsaquo; Ögretmenler listesine don</a>' +
+    '<a class="backlink" id="toAdminTeachers3">&lsaquo; Öğretmenler listesine don</a>' +
     '<div class="sectiontitle"><span>'+escapeHtml(state.adminTeacher.username)+' - Son Islemler</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Henuz kayitli islem yok.</div>');
   document.getElementById('toAdminTeachers3').onclick = ()=>{ state.view='admin_teachers'; render(); };
@@ -1764,6 +1831,52 @@ async function loadAdminClasses(teacherId){
   state.loading = true; render();
   const { data } = await sb.from('classes').select('*').eq('owner_id', teacherId).order('sort_order');
   state.adminClasses = data || [];
+  state.loading = false;
+  render();
+}
+
+function renderAdminClasses(){
+  removeFab();
+  const rows = (state.adminClasses||[]).map(c=>
+    '<div class="card studentcard" data-class="'+c.id+'" data-cname="'+escapeHtml(c.name)+'">' +
+      '<div class="name">'+escapeHtml(c.name)+'</div>' +
+      '<div class="chev">&rsaquo;</div>' +
+    '</div>'
+  ).join('');
+  $app.innerHTML =
+    '<a class="backlink" id="toAdminTeachers">&lsaquo; Öğretmenler listesine don</a>' +
+    '<div class="sectiontitle"><span>'+escapeHtml(state.adminTeacher.username)+' - Sınıflar</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Bu öğretmenin henuz sınıfı yok.</div>');
+  document.getElementById('toAdminTeachers').onclick = ()=>{ state.view='admin_teachers'; render(); };
+  $app.querySelectorAll('[data-class]').forEach(el=>{
+    el.onclick = ()=>{
+      state.adminClass = { id: el.dataset.class, name: el.dataset.cname };
+      state.view = 'admin_class';
+      loadAdminClassDetail(el.dataset.class);
+    };
+  });
+}
+
+async function loadAdminClassDetail(classId){
+  state.loading = true; render();
+  const { data: students } = await sb.from('students').select('*').eq('class_id', classId).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id', classId).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id', classId).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows = [];
+  if(ids.length){
+    const r = await sb.from('homework_status').select('*').in('student_id', ids);
+    hwStatusRows = r.data || [];
+  }
+  const hwStatus = {};
+  for(const row of hwStatusRows){
+    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
+    hwStatus[row.student_id][row.slot_no] = row.done;
+  }
+  state.adminStudents = students || [];
+  state.adminHomeworks = homeworks || [];
+  state.adminPerfTasks = perfTasks || [];
+  state.adminHwStatus = hwStatus;
   state.loading = false;
   render();
 }
@@ -1804,61 +1917,6 @@ function renderAdminClass(){
     '<div class="sectiontitle"><span>Performans Ödevleri</span><span class="line"></span></div>' +
     (perfRows || '<div class="empty">Henuz performans ödevi tanimlanmadi.</div>') +
     '<div class="sectiontitle"><span>Ogrenciler</span><span class="line"></span></div>' +
-    (rows || '<div class="empty">Ogrenci yok.</div>');
-  document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
-  $app.querySelectorAll('[data-student]').forEach(el=>{
-    el.onclick = ()=>{
-      state.adminStudent = state.adminStudents.find(s=>s.id===el.dataset.student);
-      state.view = 'admin_student';
-      loadAdminStudentDetail(el.dataset.student);
-    };
-  });
-}
-
-async function loadAdminClassDetail(classId){
-  state.loading = true; render();
-  const { data: students } = await sb.from('students').select('*').eq('class_id', classId).order('sort_order');
-  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id', classId).order('slot_no');
-  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id', classId).order('slot_no');
-  const ids = (students||[]).map(s=>s.id);
-  let hwStatusRows = [];
-  if(ids.length){
-    const r = await sb.from('homework_status').select('*').in('student_id', ids);
-    hwStatusRows = r.data || [];
-  }
-  const hwStatus = {};
-  for(const row of hwStatusRows){
-    hwStatus[row.student_id] = hwStatus[row.student_id] || {};
-    hwStatus[row.student_id][row.slot_no] = row.done;
-  }
-  state.adminStudents = students || [];
-  state.adminHomeworks = homeworks || [];
-  state.adminPerfTasks = perfTasks || [];
-  state.adminHwStatus = hwStatus;
-  state.loading = false;
-  render();
-}
-
-function renderAdminClass(){
-  removeFab();
-  const today = todayStr();
-  const assigned = (state.adminHomeworks||[]).filter(h=>h.check_date && h.check_date<=today).length;
-  const rows = (state.adminStudents||[]).map(s=>{
-    const st = state.adminHwStatus[s.id] || {};
-    let done = 0;
-    (state.adminHomeworks||[]).forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) done++; });
-    const p = assigned>0 ? Math.round((done/assigned)*100) : 0;
-    return '<div class="card studentcard" data-student="'+s.id+'">' +
-      '<div class="no">'+(s.no||'')+'</div>' +
-      '<div class="name">'+escapeHtml(s.name)+'</div>' +
-      '<div class="pct '+(p<60?'low':'')+' num">'+p+'%</div>' +
-      '<div class="chev">&rsaquo;</div>' +
-    '</div>';
-  }).join('');
-  $app.innerHTML =
-    '<a class="backlink" id="toAdminClasses">&lsaquo; '+escapeHtml(state.adminTeacher.username)+' sınıflarına don</a>' +
-    '<div class="infobar"><div>Bugune kadar verilen ödev: <b class="num">'+assigned+'</b> / '+(state.adminHomeworks||[]).length+'</div></div>' +
-    '<div class="sectiontitle"><span>Ogrenciler (salt okunur)</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Ogrenci yok.</div>');
   document.getElementById('toAdminClasses').onclick = ()=>{ state.view='admin_classes'; render(); };
   $app.querySelectorAll('[data-student]').forEach(el=>{
@@ -1918,7 +1976,7 @@ function renderAdminStudent(){
   const hwRows = (state.adminHomeworks||[]).map(h=>{
     const future = !h.check_date || h.check_date > today;
     const done = !!(state.adminHwStatus[s.id]||{})[h.slot_no];
-    const topic = h.topic || ('(Ödev '+h.slot_no+' tanimlanmadi)');
+    const topic = h.topic || ('(Odev '+h.slot_no+' tanimlanmadi)');
     return '<div class="hwrow '+(future?'future':'')+'">' +
       '<div class="topic"><div class="t">'+escapeHtml(topic)+'</div>' +
         '<div class="d">'+(h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'')+(h.check_date?(' &middot; Kontrol: '+fmtDate(h.check_date)):'')+'</div></div>' +
@@ -1930,13 +1988,12 @@ function renderAdminStudent(){
 
   $app.innerHTML =
     '<a class="backlink" id="toAdminClass">&lsaquo; '+escapeHtml(state.adminClass.name)+' listesine don</a>' +
-    '<div class="infobar" style="background:var(--accent-soft); color:var(--accent); font-weight:700; justify-content:center;">Salt okunur goruntuleme - degisiklik yapilamaz</div>' +
     (s.no ? '<p style="font-size:12.5px; color:var(--ink-soft); margin:8px 0 0;">No: '+escapeHtml(s.no)+'</p>' : '') +
     ((state.adminQuizzes||[]).length ? '<div class="sectiontitle"><span>Mini Sinav Notlari</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     ((state.adminPerfTasks||[]).length ? '<div class="sectiontitle"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     '<div class="sectiontitle"><span>Ödev Gecmisi</span><span class="line"></span></div>' +
-    '<div class="card">'+(hwRows||'<div class="empty">Ödev yok.</div>')+'</div>' +
-    (s.teacher_note ? '<div class="sectiontitle"><span>Ögretmen Notu</span><span class="line"></span></div><div class="card" style="font-size:13.5px; color:var(--ink);">'+escapeHtml(s.teacher_note)+'</div>' : '');
+    '<div class="card">'+(hwRows||'<div class="empty">Odev yok.</div>')+'</div>' +
+    (s.teacher_note ? '<div class="sectiontitle"><span>Ogretmen Notu</span><span class="line"></span></div><div class="card" style="font-size:13.5px; color:var(--ink);">'+escapeHtml(s.teacher_note)+'</div>' : '');
 
   document.getElementById('toAdminClass').onclick = ()=>{ state.view='admin_class'; render(); };
 }
@@ -1958,6 +2015,9 @@ function escapeHtml(str){
   sb.auth.onAuthStateChange((event, newSession) => {
     if(event === 'SIGNED_OUT'){
       $logoutLink.style.display = 'none';
+    }
+    if(event === 'PASSWORD_RECOVERY'){
+      renderSetNewPassword();
     }
   });
 })();
