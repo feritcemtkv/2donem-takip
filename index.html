@@ -1673,7 +1673,7 @@ async function loadAdminTeachers(){
   state.loading = true; render();
   const { data, error } = await sb.from('profiles').select('*').order('username');
   if(error){ console.error('loadAdminTeachers', error); }
-  state.adminTeachers = data || [];
+  state.adminTeachers = (data || []).filter(t => t.id !== state.userId);
   state.loading = false;
   render();
 }
