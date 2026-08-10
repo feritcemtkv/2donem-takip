@@ -243,6 +243,9 @@ async function doLogout(){
   state.username = '';
   document.getElementById('welcomeBar').style.display = 'none';
   state.cls = null; state.classId = null; state.classes = []; state.students = [];
+  state.view = 'roster';
+  state.isAdmin = false;
+  state.adminTeachers = [];
   renderLogin();
 }
 
