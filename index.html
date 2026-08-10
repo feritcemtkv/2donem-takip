@@ -277,7 +277,7 @@ async function startApp(){
   state.userId = user ? user.id : null;
   state.username = user && user.email ? user.email.split('@')[0] : '';
   state.userEmail = user ? user.email : '';
-  state.isAdmin = state.userEmail === 'ferit@takip.local';
+  state.isAdmin = state.userEmail === 'admin@takip.local';
   if(state.isAdmin){
     state.view = 'admin_teachers';
     await loadAdminTeachers();
