@@ -191,7 +191,7 @@
 <header class="top">
   <div class="brand">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.3 · bulut</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.4 · bulut</span></h1>
   </div>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
@@ -733,6 +733,7 @@ async function addQuizFromExcel(file){
     showToast(exWord+' eklendi, '+matched+' öğrenci güncellendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
+
 async function addPerfTask(label){
   const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
   const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
@@ -824,7 +825,6 @@ async function setRubricScore(sid, level, critIndex, score){
   showToast('Puan kaydedildi');
 }
 
-// ============== TYT / AYT DENEMELERI (12. sinif) ==============
 async function importDenemeFromExcel(file, examType){
   if(!file) return;
   const label = prompt('Yeni '+(examType==='tyt'?'TYT':'AYT')+' denemesinin adı:');
@@ -908,7 +908,6 @@ async function updateDenemeScore(sid, examId, subject, field, value){
   showToast('Kaydedildi');
 }
 
-// ============== RENDER DISPATCH ==============
 function render(){
   const app = document.getElementById('app');
   if(state.page==='login') return renderLogin(app);
@@ -1341,10 +1340,20 @@ function renderRubric(app){
     });
   } else {
     app.querySelectorAll('[data-sumid]').forEach(el=>{
-      el.onclick = ()=>{ state.studentId = el.dataset.sumid; render(); };
+      el.onclick = ()=>{
+        state.studentId = el.dataset.sumid;
+        render();
+        const picker = app.querySelector('.studentpicker');
+        if(picker) picker.scrollIntoView({behavior:'smooth', block:'center'});
+      };
     });
     app.querySelectorAll('.studentpicker button').forEach(b=>{
-      b.onclick = ()=>{ state.studentId = b.dataset.id; render(); };
+      b.onclick = ()=>{
+        state.studentId = b.dataset.id;
+        render();
+        const picker = app.querySelector('.studentpicker');
+        if(picker) picker.scrollIntoView({behavior:'smooth', block:'center'});
+      };
     });
     app.querySelectorAll('.levelcard[data-ci]').forEach(el=>{
       el.onclick = ()=>{
@@ -1441,7 +1450,6 @@ function renderQuickQuiz(app){
   });
 }
 
-// ---- TYT / AYT ----
 function renderDenemeList(app, examType){
   const label = examType==='tyt'?'TYT':'AYT';
   const exams = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
