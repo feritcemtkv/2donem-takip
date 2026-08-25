@@ -1341,9 +1341,14 @@ function renderQuizPicker(app){
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="back7">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>Not Girmek İçin '+exWord+' Seç</h2></div>' +
-    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı.</div>');
+    '<div class="pagehead"><h2>'+exWord+' Notu Gir</h2></div>' +
+    '<button class="btn btn-soft full" id="addQuizExcelBtn" style="margin-bottom:16px;">'+ic('upload')+'Excelden Yeni '+exWord+' Ekle</button>' +
+    '<input type="file" id="addQuizExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    '<div class="section-title"><span>Var Olan '+examWordPlural()+'</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı, yukarıdan Excelden ekleyebilirsin.</div>');
   document.getElementById('back7').onclick = backToRoster;
+  document.getElementById('addQuizExcelBtn').onclick = ()=> document.getElementById('addQuizExcelFile').click();
+  document.getElementById('addQuizExcelFile').onchange = (e)=> addQuizFromExcel(e.target.files[0]);
   app.querySelectorAll('[data-pick]').forEach(el=>{
     el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom='quiz_picker'; state.view='quick_quiz'; render(); };
   });
