@@ -45,7 +45,7 @@
   .teacherbox{display:flex;align-items:center;gap:10px;background:var(--surface-2);padding:6px 8px 6px 14px;border-radius:999px;cursor:pointer;border:none;}
   .teacherbox .who{text-align:right;line-height:1.25;}
   .teacherbox .name{font-size:13px;font-weight:700;color:var(--ink);}
-  .teacherbox .branch{font-size:11px;color:var(--ink-soft);}
+  .teacherbox .branch{font-size:11px;color:var(--red);font-weight:700;}
   .teacherbox .av{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
 
   main#app{padding:26px 30px 70px;max-width:1180px;margin:0 auto;}
@@ -64,6 +64,7 @@
   .btn-danger{background:var(--red-soft);color:var(--red);}
   .btn-sm{padding:7px 11px;font-size:12.5px;border-radius:8px;}
   .btn:disabled{opacity:.5;cursor:default;}
+  .btn.full{width:100%;justify-content:center;}
 
   .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:26px;}
   .statcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:19px;display:flex;align-items:center;gap:15px;box-shadow:var(--shadow);}
@@ -77,7 +78,7 @@
   .section-title:first-child{margin-top:0;}
 
   .classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
-  .classcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;cursor:pointer;box-shadow:var(--shadow);border-top:4px solid var(--tag,var(--primary));}
+  .classcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;cursor:pointer;box-shadow:var(--shadow);border-top:4px solid var(--primary);}
   .classcard h3{font-size:19px;margin-bottom:4px;}
   .classcard .meta{font-size:12px;color:var(--ink-soft);margin-bottom:14px;font-weight:600;}
   .classcard .tags{display:flex;gap:6px;flex-wrap:wrap;}
@@ -137,14 +138,30 @@
   .iconbtn:hover{background:var(--red-soft);}
   .iconbtn .ic{width:17px;height:17px;}
 
-  .studentpicker{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
-  .studentpicker input{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 9px;font-size:14px;font-weight:700;text-align:center;color:var(--primary-deep);}
   .scoregrid{display:flex;flex-direction:column;}
   .scorerow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
   .scorerow:last-child{border-bottom:none;}
   .scorerow .no{width:24px;font-size:11.5px;color:var(--ink-faint);font-weight:700;text-align:center;}
   .scorerow .name{flex:1;font-size:14px;font-weight:700;}
   .scorerow input{width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;font-weight:800;text-align:center;color:var(--primary-deep);}
+
+  .levelpicker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;}
+  .levelpicker button{border:none;background:var(--primary-soft);color:var(--primary-deep);padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;}
+  .levelpicker button.active{background:var(--primary);color:#fff;}
+  .levelcard{border:2px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;}
+  .levelcard.sel{border-color:var(--teal);background:var(--teal-soft);}
+  .levelcard .lh{display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:4px;}
+  .levelcard .lh .score{color:var(--primary-deep);}
+  .levelcard .desc{font-size:12.5px;color:var(--ink-soft);line-height:1.4;}
+  .critblock{margin-bottom:20px;}
+  .critblock h3{font-size:14.5px;margin-bottom:8px;color:var(--ink);}
+  .critblock .max{font-size:12px;color:var(--ink-soft);font-weight:400;}
+  .rubricsummary{display:flex;justify-content:space-between;align-items:center;background:var(--primary);color:#fff;border-radius:var(--radius);padding:14px 16px;margin:16px 0;}
+  .rubricsummary .num{font-size:26px;font-weight:800;}
+  .rubricsummary .lbl{font-size:11px;opacity:.8;text-transform:uppercase;}
+  .studentpicker{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;-webkit-overflow-scrolling:touch;}
+  .studentpicker button{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;font-size:13px;white-space:nowrap;}
+  .studentpicker button.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700;}
 
   .empty{text-align:center;padding:40px 20px;color:var(--ink-soft);}
   .empty .big{font-size:34px;margin-bottom:8px;}
@@ -158,16 +175,18 @@
   .modalbox label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin:14px 0 6px;}
   .modalbox label:first-of-type{margin-top:0;}
   .modalbox input[type=text]{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:14px;}
-  .checkrow{display:flex;align-items:center;gap:9px;padding:9px 0;}
-  .checkrow input{width:17px;height:17px;}
-  .checkrow span{font-size:13.5px;font-weight:600;}
   .modalactions{display:flex;gap:10px;margin-top:20px;}
   .modalactions .btn{flex:1;justify-content:center;}
 
-  .tagpicker{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 6px;}
-  .tabbar{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;}
-  .tabbar button{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;}
-  .tabbar button.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .loginwrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .loginbox{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:30px 26px;box-shadow:var(--shadow);}
+  .loginbox h2{font-size:21px;color:var(--ink);margin-bottom:4px;text-align:center;}
+  .loginbox p.sub{font-size:12.5px;color:var(--ink-soft);text-align:center;margin-bottom:22px;}
+  .loginbox label{display:block;font-size:12px;color:var(--ink-soft);margin:14px 0 6px;font-weight:700;}
+  .loginbox label:first-of-type{margin-top:0;}
+  .loginbox input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14.5px;font-family:inherit;}
+  .loginbox button{width:100%;margin-top:20px;justify-content:center;}
+  .loginbox .err{color:var(--red);font-size:12.5px;margin-top:12px;text-align:center;min-height:16px;}
 
   @media(max-width:820px){
     main#app{padding:18px 14px 60px;}
@@ -180,12 +199,12 @@
 <header class="top">
   <div class="brand">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.1.0 · yerel</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.2 · bulut</span></h1>
   </div>
   <div class="spacer"></div>
-  <button class="teacherbox" id="teacherBtn">
-    <div class="who"><div class="name" id="teacherNameLbl">Öğretmenim</div><div class="branch" id="teacherBranchLbl">Branş belirtilmedi</div></div>
-    <div class="av" id="teacherAv">Ö</div>
+  <button class="teacherbox" id="teacherBtn" style="display:none;">
+    <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Çıkış Yap</div></div>
+    <div class="av" id="teacherAv"></div>
   </button>
 </header>
 
@@ -194,124 +213,50 @@
 <div class="toast" id="toast"></div>
 <div id="modalRoot"></div>
 
-<script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+
 // ============== ICONS ==============
 const ICONS = {
   home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
   school:'<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
-  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   flag:'<path d="M5 3v18"/><path d="M5 4h11l-2 4 2 4H5"/>',
-  shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="m9 12 2 2 4-4"/>',
   users:'<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.9.5 5 2.5 5 5.8"/>',
   file:'<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/>',
-  power:'<path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',
   plus:'<path d="M12 5v14"/><path d="M5 12h14"/>',
   chevron:'<path d="m9 6 6 6-6 6"/>',
   trash:'<path d="M4 7h16"/><path d="M6 7v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7"/><path d="M9 7V4h6v3"/>',
   book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/>',
   target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.3" width="6" height="3.2" rx="1"/><path d="M9 11h6M9 15h6"/>',
-  download:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',
   upload:'<path d="M12 20V9"/><path d="m7 13 5-5 5 5"/><path d="M5 20h14"/>',
 };
 function ic(name){ return '<svg class="ic" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
 
-// ============== DATA ==============
-const STORAGE_KEY = 'ogretmen_panel_data_v1';
-function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9); }
-
-function makeStudents(names){
-  return names.map((n,i)=>({id:uid('st'), no:String(i+1), name:n, note:''}));
-}
-
-function defaultData(){
-  const s9a = makeStudents(['Ahmet Yılmaz','Ayşe Demir','Mehmet Kaya','Zeynep Şahin','Burak Aydın','Elif Çelik','Cem Öztürk','Selin Arslan']);
-  const s10b = makeStudents(['Kerem Aksoy','Deniz Polat','İrem Koç','Ege Yıldırım','Sude Kurt','Barış Şen','Nil Aydoğan','Umut Kara']);
-  const s12c = makeStudents(['Alper Güneş','Buse Yavuz','Doruk Er','Hazal Bulut','Kaan Türkmen','Melis Aktaş','Onur Şahin','Pelin Doğan']);
-
-  function hwStatusFor(students, doneMap){
-    const st = {};
-    students.forEach((s,i)=>{ st[s.id] = { 1: !!doneMap[1] && doneMap[1].includes(i), 2: !!doneMap[2] && doneMap[2].includes(i) }; });
-    return st;
-  }
-  function scoresFor(students, arr, slot){
-    const sc = {};
-    students.forEach((s,i)=>{ sc[s.id] = sc[s.id]||{}; sc[s.id][slot] = arr[i]; });
-    return sc;
-  }
-  function mergeScores(a,b){ const r={}; Object.keys(a).forEach(k=>r[k]={...a[k]}); Object.keys(b).forEach(k=>{ r[k]=r[k]||{}; Object.assign(r[k], b[k]); }); return r; }
-
-  const c9a = {
-    id:'c9a', name:'9-A', hasHomework:true, hasTopicExam:true, hasDeneme:false,
-    students: s9a,
-    homeworks: [
-      {slotNo:1, topic:'Bölme ve Bölünebilme Kuralları Soru Seti', hwDate:'2026-08-10', checkDate:'2026-08-17'},
-      {slotNo:2, topic:'Cebirsel İfadeler ve Özdeşlikler', hwDate:'2026-08-17', checkDate:'2026-08-24'},
-    ],
-    hwStatus: hwStatusFor(s9a, {1:[0,1,3,4,6], 2:[0,2,5]}),
-    topicExams: [{slotNo:1, label:'1. Konu Değerlendirme Sınavı (Sayılar)'}],
-    topicScores: scoresFor(s9a, [78,85,64,92,70,58,88,75], 1),
-    studentNote: {},
-  };
-  const c10b = {
-    id:'c10b', name:'10-B', hasHomework:true, hasTopicExam:true, hasDeneme:false,
-    students: s10b,
-    homeworks: [
-      {slotNo:1, topic:'Fonksiyonlarda Uygulama Soruları', hwDate:'2026-08-11', checkDate:'2026-08-18'},
-      {slotNo:2, topic:'İkinci Dereceden Denklemler', hwDate:'2026-08-18', checkDate:'2026-08-24'},
-    ],
-    hwStatus: hwStatusFor(s10b, {1:[1,2,3,5,7], 2:[0,1,4]}),
-    topicExams: [{slotNo:1, label:'1. Konu Değerlendirme Sınavı (Fonksiyonlar)'}],
-    topicScores: scoresFor(s10b, [66,80,90,55,72,84,61,77], 1),
-    studentNote: {},
-  };
-  const c12c = {
-    id:'c12c', name:'12-C', hasHomework:false, hasTopicExam:false, hasDeneme:true,
-    students: s12c,
-    denemeExams: [{slotNo:1, label:'1. Deneme Sınavı'}, {slotNo:2, label:'2. Deneme Sınavı'}],
-    denemeScores: mergeScores(
-      scoresFor(s12c, [410,365,298,445,340,275,390,320], 1),
-      scoresFor(s12c, [428,372,310,460,355,290,402,335], 2)
-    ),
-    studentNote: {},
-  };
-
-  return { teacherName:'Öğretmenim', teacherBranch:'', classes:[c9a, c10b, c12c] };
-}
-
-function loadData(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){ return JSON.parse(raw); }
-  }catch(e){ console.error('loadData', e); }
-  const d = defaultData();
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
-  return d;
-}
-function saveData(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data)); }
-  catch(e){ showToast('Kaydedilemedi: tarayıcı depolama alanı hatası'); console.error(e); }
-}
-
 // ============== STATE ==============
 let state = {
-  data: loadData(),
-  page: 'home',       // home | sinif_detail
-  classId: null,
-  view: 'roster',      // roster | student | homeworks | hw_picker | quick_hw | topicExams | topic_picker | quick_topic | denemeExams | deneme_picker | quick_deneme
+  userId: null, username: null, userEmail: null,
+  page: 'login', // login | home | sinif_detail
+  classes: [], classId: null, cls: null,
+  view: 'roster',
   studentId: null,
-  activeSlot: null,
-  checkFrom: null,
+  activeSlot: null, checkFrom: null,
   sortBy: 'no',
+  rubricLevel: null, rubricEdit: false,
+  loading: false,
 };
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){ if(!d) return null; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
-function findClass(id){ return state.data.classes.find(c=>c.id===id); }
-function findStudent(cls, id){ return cls.students.find(s=>s.id===id); }
 function escapeHtml(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function sortedStudents(cls){
-  return [...cls.students].sort((a,b)=>{
+function studentById(id){ return state.cls.students.find(s=>s.id===id); }
+function sortedStudents(){
+  return [...state.cls.students].sort((a,b)=>{
     if(state.sortBy==='name') return a.name.localeCompare(b.name,'tr');
     const na=parseInt(a.no), nb=parseInt(b.no);
     const va=isNaN(na)?Infinity:na, vb=isNaN(nb)?Infinity:nb;
@@ -319,54 +264,88 @@ function sortedStudents(cls){
     return a.name.localeCompare(b.name,'tr');
   });
 }
-
 function showToast(msg){
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(()=>t.classList.remove('show'), 1700);
 }
 
-// ============== HW / EXAM CALC ==============
-function hwAssignedCount(cls){
-  const today = todayStr();
-  return cls.homeworks.filter(h=>h.checkDate && h.checkDate<=today).length;
+// ============== SINIF SEVIYESINE GORE ETIKET (12. sinif = Deneme, digerleri = KDS) ==============
+function isGrade12(name){ name = name || (state.cls?state.cls.name:''); return /12/.test(name); }
+function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS'; }
+function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : "KDS'leri"; }
+
+// ============== AUTH ==============
+function toEmail(username){
+  username = username.trim();
+  if(username.includes('@')) return username;
+  return username + '@takip.local';
 }
-function hwCompletedCount(cls, sid){
-  const today = todayStr();
-  const st = cls.hwStatus[sid] || {};
-  let n=0;
-  cls.homeworks.forEach(h=>{ if(h.checkDate && h.checkDate<=today && st[h.slotNo]) n++; });
-  return n;
+async function doLogin(username, password){
+  const $err = document.getElementById('loginErr');
+  const $btn = document.getElementById('loginBtn');
+  $err.textContent = '';
+  $btn.textContent = 'Giriş yapılıyor...'; $btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: toEmail(username), password });
+  if(error){
+    $err.textContent = 'Kullanıcı adı veya şifre hatalı.';
+    $btn.textContent = 'Giriş Yap'; $btn.disabled = false;
+    return;
+  }
+  await startApp();
 }
-function hwPct(cls, sid){
-  const a = hwAssignedCount(cls);
-  if(a===0) return 0;
-  return Math.round((hwCompletedCount(cls,sid)/a)*100);
+async function doLogout(){
+  await sb.auth.signOut();
+  state.userId = null; state.username = null; state.userEmail = null;
+  state.classes = []; state.classId = null; state.cls = null;
+  state.page = 'login';
+  document.getElementById('teacherBtn').style.display = 'none';
+  render();
 }
-function hwClassAvg(cls){
-  const vals = cls.students.map(s=>hwPct(cls,s.id));
-  if(!vals.length) return null;
-  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+async function startApp(){
+  const { data: { user } } = await sb.auth.getUser();
+  state.userId = user ? user.id : null;
+  state.userEmail = user ? user.email : null;
+  state.username = user && user.email ? user.email.split('@')[0] : '';
+  document.getElementById('teacherBtn').style.display = 'flex';
+  document.getElementById('teacherNameLbl').textContent = state.username;
+  document.getElementById('teacherAv').textContent = (state.username||'?').trim().charAt(0).toUpperCase();
+  state.page = 'home';
+  state.loading = true; render();
+  await loadClasses();
+  state.loading = false;
+  render();
 }
-function scoreAvgForStudent(scoreMap, sid){
-  const rec = scoreMap[sid] || {};
-  const vals = Object.values(rec).map(Number).filter(v=>!isNaN(v));
-  if(!vals.length) return null;
-  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
-}
-function examClassAvg(scoreMap, students, slotNo){
-  const vals = students.map(s=>{ const v=parseFloat((scoreMap[s.id]||{})[slotNo]); return isNaN(v)?null:v; }).filter(v=>v!=null);
-  if(!vals.length) return null;
-  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+document.getElementById('teacherBtn').onclick = ()=>{
+  if(confirm('Çıkış yapmak istediğine emin misin?')) doLogout();
+};
+
+function renderLogin(app){
+  app.innerHTML =
+    '<div class="loginwrap"><div class="loginbox">' +
+      '<h2>Giriş Yap</h2>' +
+      '<p class="sub">Sınıf panelinize erişmek için giriş yapın</p>' +
+      '<label>Kullanıcı Adı</label>' +
+      '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
+      '<label>Şifre</label>' +
+      '<input type="password" id="loginPass">' +
+      '<button class="btn btn-primary" id="loginBtn">Giriş Yap</button>' +
+      '<div class="err" id="loginErr"></div>' +
+    '</div></div>';
+  const $user = document.getElementById('loginUser');
+  const $pass = document.getElementById('loginPass');
+  const submit = ()=> doLogin($user.value, $pass.value);
+  document.getElementById('loginBtn').onclick = submit;
+  $user.addEventListener('keydown', e=>{ if(e.key==='Enter') $pass.focus(); });
+  $pass.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$user.focus(), 50);
 }
 
-function renderTeacherbox(){
-  document.getElementById('teacherNameLbl').textContent = state.data.teacherName || 'Öğretmenim';
-  document.getElementById('teacherBranchLbl').textContent = state.data.teacherBranch || 'Branş belirtilmedi';
-  document.getElementById('teacherAv').textContent = (state.data.teacherName||'Ö').trim().charAt(0).toUpperCase();
-  document.getElementById('teacherBtn').onclick = openTeacherModal;
+async function logActivity(description){
+  if(!state.userId) return;
+  try{ await sb.from('activity_log').insert({ user_id: state.userId, class_name: state.cls?state.cls.name:null, description }); }
+  catch(e){ console.error('logActivity error', e); }
 }
 
 // ============== MODAL SYSTEM ==============
@@ -375,99 +354,461 @@ function openModalHtml(innerHtml){
   document.getElementById('modalRoot').innerHTML = '<div class="modalbg" id="modalBg"><div class="modalbox">'+innerHtml+'</div></div>';
   document.getElementById('modalBg').onclick = (e)=>{ if(e.target.id==='modalBg') closeModal(); };
 }
-
-function openTeacherModal(){
-  openModalHtml(
-    '<h3>Profil Bilgileri</h3>' +
-    '<label>Ad Soyad</label><input type="text" id="mTeacherName" value="'+escapeHtml(state.data.teacherName||'')+'">' +
-    '<label>Branş</label><input type="text" id="mTeacherBranch" value="'+escapeHtml(state.data.teacherBranch||'')+'" placeholder="Örn. Matematik Öğretmeni">' +
-    '<div class="modalactions"><button class="btn btn-outline" id="mCancel">Vazgeç</button><button class="btn btn-primary" id="mSave">Kaydet</button></div>'
-  );
-  document.getElementById('mCancel').onclick = closeModal;
-  document.getElementById('mSave').onclick = ()=>{
-    state.data.teacherName = document.getElementById('mTeacherName').value.trim() || 'Öğretmenim';
-    state.data.teacherBranch = document.getElementById('mTeacherBranch').value.trim();
-    saveData(); closeModal(); renderTeacherbox();
-    showToast('Profil güncellendi');
-  };
-}
-
 function openNewClassModal(){
   openModalHtml(
     '<h3>Yeni Sınıf Ekle</h3>' +
     '<label>Sınıf adı (örn. 11-D)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
-    '<label>Bu sınıfta neleri takip edeceksin?</label>' +
-    '<div class="checkrow"><input type="checkbox" id="mHasHw" checked><span>Ödev takibi</span></div>' +
-    '<div class="checkrow"><input type="checkbox" id="mHasTopic" checked><span>Konu değerlendirme sınavı sonuçları</span></div>' +
-    '<div class="checkrow"><input type="checkbox" id="mHasDeneme"><span>Deneme sınavı puanları</span></div>' +
     '<div class="modalactions"><button class="btn btn-outline" id="mCancel">Vazgeç</button><button class="btn btn-primary" id="mSave">Sınıfı Oluştur</button></div>'
   );
   document.getElementById('mCancel').onclick = closeModal;
-  document.getElementById('mSave').onclick = ()=>{
-    const name = document.getElementById('mClassName').value.trim();
-    if(!name){ showToast('Sınıf adı gerekli'); return; }
-    const cls = {
-      id: uid('cls'), name,
-      hasHomework: document.getElementById('mHasHw').checked,
-      hasTopicExam: document.getElementById('mHasTopic').checked,
-      hasDeneme: document.getElementById('mHasDeneme').checked,
-      students: [], homeworks: [], hwStatus: {}, topicExams: [], topicScores: {}, denemeExams: [], denemeScores: {}, studentNote: {},
-    };
-    state.data.classes.push(cls);
-    saveData();
-    closeModal();
-    state.page='sinif_detail'; state.classId=cls.id; state.view='roster';
-    render();
-    showToast('"'+name+'" sınıfı oluşturuldu');
+  document.getElementById('mSave').onclick = ()=> addClass(document.getElementById('mClassName').value);
+}
+
+// ============== CLASSES (SUPABASE) ==============
+async function loadClasses(){
+  const { data } = await sb.from('classes').select('*').order('sort_order');
+  state.classes = data || [];
+}
+async function addClass(name){
+  name = name.trim();
+  if(!name) return;
+  if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Bu sınıf zaten var'); return; }
+  const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+  const { data, error } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
+  if(error){ showToast('Hata: '+error.message); return; }
+  if(data && data[0]) state.classes.push(data[0]);
+  closeModal();
+  showToast('"'+name+'" sınıfı oluşturuldu');
+  logActivity('"'+name+'" sınıfını oluşturdu');
+  state.page='sinif_detail'; state.classId=data[0].id; state.view='roster';
+  await loadClassDetail(state.classId);
+}
+async function renameClass(newName){
+  newName = newName.trim();
+  if(!newName) return;
+  await sb.from('classes').update({name:newName}).eq('id', state.cls.id);
+  const c = state.classes.find(x=>x.id===state.cls.id);
+  if(c) c.name = newName;
+  logActivity('Sınıf adını "'+newName+'" olarak değiştirdi');
+  state.cls.name = newName;
+  render();
+  showToast('Sınıf adı güncellendi');
+}
+async function deleteClass(){
+  const name = state.cls.name;
+  await sb.from('classes').delete().eq('id', state.cls.id);
+  state.classes = state.classes.filter(c=>c.id!==state.cls.id);
+  logActivity('"'+name+'" sınıfını sildi');
+  state.page='home'; state.cls=null; state.classId=null;
+  render();
+  showToast('Sınıf silindi');
+}
+
+async function loadClassDetail(classId){
+  state.loading = true; render();
+  const classObj = state.classes.find(c=>c.id===classId);
+  const { data: students } = await sb.from('students').select('*').eq('class_id',classId).order('sort_order');
+  const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id',classId).order('slot_no');
+  const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
+  const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
+  const ids = (students||[]).map(s=>s.id);
+  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[];
+  if(ids.length){
+    const r1 = await sb.from('homework_status').select('*').in('student_id', ids); hwStatusRows = r1.data||[];
+    const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids); rubricScoreRows = r2.data||[];
+    const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids); quizScoreRows = r3.data||[];
+  }
+  const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_id', classId);
+  const hwStatus = {};
+  for(const row of hwStatusRows){ hwStatus[row.student_id]=hwStatus[row.student_id]||{}; hwStatus[row.student_id][row.slot_no]=row.done; }
+  const rubricScores = {};
+  for(const row of rubricScoreRows){ rubricScores[row.student_id]=rubricScores[row.student_id]||{}; rubricScores[row.student_id][row.level]=rubricScores[row.student_id][row.level]||{}; rubricScores[row.student_id][row.level][row.criteria_index]=row.score; }
+  const rubrics = {};
+  for(const row of (rubricRows||[])){ rubrics[row.level]=row.criteria; }
+  const quizScores = {};
+  for(const row of quizScoreRows){
+    quizScores[row.student_id]=quizScores[row.student_id]||{};
+    quizScores[row.student_id][row.slot_no]={ dogru: row.dogru, yanlis: row.yanlis, bos: row.bos, score: row.score };
+  }
+  state.cls = {
+    id: classId, name: classObj?classObj.name:'',
+    students: students||[], homeworks: homeworks||[], hwStatus,
+    quizzes: quizzes||[], quizScores,
+    perfTasks: perfTasks||[], rubrics, rubricScores,
   };
+  state.rubricLevel = (state.cls.perfTasks[0] && state.cls.perfTasks[0].label) || null;
+  state.loading = false;
+  render();
+}
+
+// ============== CALC HELPERS ==============
+function assignedCount(){ const today=todayStr(); return state.cls.homeworks.filter(h=>h.check_date && h.check_date<=today).length; }
+function completedCount(sid){ const today=todayStr(); const st=state.cls.hwStatus[sid]||{}; let n=0; state.cls.homeworks.forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) n++; }); return n; }
+function hwPct(sid){ const a=assignedCount(); if(a===0) return 0; return Math.round((completedCount(sid)/a)*100); }
+function hwClassAvg(){ const vals=state.cls.students.map(s=>hwPct(s.id)); if(!vals.length) return null; return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length); }
+function rubricTotal(sid, level){
+  const crit=state.cls.rubrics[level]||[];
+  const scores=(state.cls.rubricScores[sid]||{})[level]||{};
+  let sum=0,max=0,any=false;
+  crit.forEach((c,i)=>{ max+=c.max; if(scores[i]!=null){ sum+=scores[i]; any=true; } });
+  return {sum,max,grade: any?Math.round(sum/max*100):null};
+}
+function perfTaskAvg(label){
+  const vals = state.cls.students.map(s=>rubricTotal(s.id,label).grade).filter(v=>v!=null);
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+}
+function perfClassAvg(){
+  const vals=[];
+  state.cls.students.forEach(s=>{ state.cls.perfTasks.forEach(t=>{ const g=rubricTotal(s.id,t.label).grade; if(g!=null) vals.push(g); }); });
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+}
+function quizClassAvgOverall(){
+  const vals=[];
+  state.cls.students.forEach(s=>{ state.cls.quizzes.forEach(q=>{ const v=(state.cls.quizScores[s.id]||{})[q.slot_no]; if(v && v.dogru!=null) vals.push(v.dogru); }); });
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+}
+function quizSlotAvgDYB(slotNo){
+  const entries = state.cls.students.map(s=>(state.cls.quizScores[s.id]||{})[slotNo]).filter(v=>v && (v.dogru!=null||v.yanlis!=null||v.bos!=null));
+  if(!entries.length) return null;
+  const avg = (key)=>{
+    const vals = entries.map(e=>e[key]).filter(v=>v!=null);
+    if(!vals.length) return null;
+    return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+  };
+  return { dogru: avg('dogru'), yanlis: avg('yanlis'), bos: avg('bos') };
+}
+
+// ============== STUDENTS ==============
+async function toggleAbsent(sid){
+  const s = studentById(sid); if(!s) return;
+  s.absent = !s.absent; render();
+  await sb.from('students').update({absent:s.absent}).eq('id', sid);
+  logActivity('"'+s.name+'" öğrencisini '+(s.absent?'okulda yok':'aktif')+' olarak işaretledi');
+  showToast(s.absent?'Okulda yok işaretlendi':'Aktif işaretlendi');
+}
+async function updateStudentField(sid, field, value){
+  const s = studentById(sid); if(s) s[field]=value;
+  await sb.from('students').update({[field]:value}).eq('id', sid);
+  if(s) logActivity('"'+s.name+'" öğrencisinin bilgisini güncelledi');
+  showToast('Kaydedildi');
+}
+async function addStudent(name){
+  const maxOrder = Math.max(0, ...state.cls.students.map(s=>s.sort_order||0));
+  const { data, error } = await sb.from('students').insert({class_id:state.cls.id, name, sort_order:maxOrder+1}).select();
+  if(error){ showToast('Hata: '+error.message); return; }
+  if(data && data[0]) state.cls.students.push(data[0]);
+  render();
+  logActivity('"'+name+'" öğrencisini ekledi');
+  showToast('Öğrenci eklendi');
+}
+async function renameStudent(sid, newName){
+  const s = studentById(sid); const old = s?s.name:'';
+  if(s) s.name = newName;
+  render();
+  await sb.from('students').update({name:newName}).eq('id', sid);
+  logActivity('"'+old+'" öğrencisinin adını "'+newName+'" olarak değiştirdi');
+  showToast('İsim güncellendi');
+}
+async function deleteStudent(sid){
+  const s = studentById(sid); const name = s?s.name:'Öğrenci';
+  state.cls.students = state.cls.students.filter(x=>x.id!==sid);
+  delete state.cls.hwStatus[sid]; delete state.cls.rubricScores[sid]; delete state.cls.quizScores[sid];
+  state.view='roster'; state.studentId=null;
+  render();
+  await sb.from('students').delete().eq('id', sid);
+  logActivity('"'+name+'" öğrencisini sildi');
+  showToast('Öğrenci silindi');
+}
+async function importStudentsFromExcel(file){
+  if(!file) return;
+  showToast('Dosya okunuyor...');
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(!rows.length){ showToast('Dosya boş görünüyor'); return; }
+    let startRow=0, noCol=0, nameCol=1, firstCol=-1, lastCol=-1;
+    const header = rows[0].map(c=>String(c).toLocaleLowerCase('tr'));
+    const looksLikeHeader = header.some(h=>h.includes('no')||h.includes('ad')||h.includes('isim')||h.includes('soyad'));
+    if(looksLikeHeader){
+      startRow=1;
+      header.forEach((h,i)=>{
+        if(h.includes('no')) noCol=i;
+        else if(h.includes('ad') && h.includes('soyad')) nameCol=i;
+        else if(h.includes('ad') && firstCol===-1 && !h.includes('soyad')) firstCol=i;
+        else if(h.includes('soyad')) lastCol=i;
+      });
+    }
+    const maxOrder = Math.max(0, ...state.cls.students.map(s=>s.sort_order||0));
+    const newRows = []; let order = maxOrder;
+    for(let r=startRow; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>String(c).trim()==='')) continue;
+      const no = String(row[noCol]??'').trim();
+      let name;
+      if(firstCol>=0 && lastCol>=0){ name=(String(row[firstCol]??'').trim()+' '+String(row[lastCol]??'').trim()).trim(); }
+      else { name = String(row[nameCol]??'').trim(); }
+      if(!name) continue;
+      order++;
+      newRows.push({class_id: state.cls.id, no: no||null, name, sort_order: order});
+    }
+    if(!newRows.length){ showToast('Öğrenci satırı bulunamadı'); return; }
+    const { data, error } = await sb.from('students').insert(newRows).select();
+    if(error){ showToast('Hata: '+error.message); return; }
+    state.cls.students = state.cls.students.concat(data||[]);
+    render();
+    logActivity('Excelden '+newRows.length+' öğrenci ekledi');
+    showToast(newRows.length+' öğrenci eklendi');
+  }catch(err){ showToast('Dosya okunamadı: '+err.message); }
+}
+
+// ============== HOMEWORKS ==============
+async function toggleHw(sid, slotNo){
+  const cur = !!(state.cls.hwStatus[sid]||{})[slotNo];
+  const next = !cur;
+  state.cls.hwStatus[sid] = state.cls.hwStatus[sid]||{};
+  state.cls.hwStatus[sid][slotNo] = next;
+  render();
+  await sb.from('homework_status').upsert({student_id:sid, slot_no:slotNo, done:next});
+  const s = studentById(sid);
+  const hw = state.cls.homeworks.find(h=>h.slot_no===slotNo);
+  if(s) logActivity('"'+s.name+'" - "'+(hw&&hw.topic?hw.topic:('Ödev #'+slotNo))+'" ödevini '+(next?'yaptı':'yapmadı')+' olarak işaretledi');
+}
+async function addHomework(){
+  const maxSlot = Math.max(0, ...state.cls.homeworks.map(h=>h.slot_no||0));
+  const nextSlot = maxSlot+1;
+  const { data } = await sb.from('homeworks').insert({class_id:state.cls.id, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
+  if(data && data[0]) state.cls.homeworks.push(data[0]);
+  render();
+  logActivity('Yeni ödev ekledi (#'+nextSlot+')');
+  showToast('Ödev eklendi');
+}
+async function updateHomework(slotNo, field, value){
+  const h = state.cls.homeworks.find(x=>x.slot_no===slotNo);
+  if(h) h[field] = value;
+  await sb.from('homeworks').update({[field]:value}).eq('class_id', state.cls.id).eq('slot_no', slotNo);
+  if(h) logActivity('"'+(h.topic||('Ödev #'+slotNo))+'" ödevini güncelledi');
+  showToast('Kaydedildi');
+}
+async function deleteHomework(slotNo){
+  const h = state.cls.homeworks.find(x=>x.slot_no===slotNo);
+  const label = h&&h.topic?h.topic:('Ödev #'+slotNo);
+  state.cls.homeworks = state.cls.homeworks.filter(x=>x.slot_no!==slotNo);
+  render();
+  const ids = state.cls.students.map(s=>s.id);
+  if(ids.length) await sb.from('homework_status').delete().eq('slot_no', slotNo).in('student_id', ids);
+  await sb.from('homeworks').delete().eq('class_id', state.cls.id).eq('slot_no', slotNo);
+  logActivity('"'+label+'" ödevini sildi');
+  showToast('Ödev silindi');
+}
+
+// ============== QUIZ / KDS / DENEME ==============
+async function addQuiz(){
+  const exWord = examWord();
+  const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
+  if(!label || !label.trim()) return;
+  const maxSlot = Math.max(0, ...state.cls.quizzes.map(q=>q.slot_no||0));
+  const { data } = await sb.from('quizzes').insert({class_id:state.cls.id, slot_no:maxSlot+1, label:label.trim()}).select();
+  if(data && data[0]) state.cls.quizzes.push(data[0]);
+  render();
+  logActivity('"'+label.trim()+'" '+exWord+' ekledi');
+  showToast(exWord+' eklendi');
+}
+async function renameQuiz(slotNo, label){
+  const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
+  const old = q?q.label:null;
+  if(q) q.label = label;
+  await sb.from('quizzes').update({label}).eq('class_id', state.cls.id).eq('slot_no', slotNo);
+  if(old && old!==label) logActivity('"'+old+'" öğesini "'+label+'" olarak yeniden adlandırdı');
+  showToast('Kaydedildi');
+}
+async function deleteQuiz(slotNo){
+  const exWord = examWord();
+  if(!confirm('Bu '+exWord+' silinsin mi? Öğrencilerin bu öğeye ait notları da silinir.')) return;
+  const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
+  const label = q?q.label:(exWord+' #'+slotNo);
+  state.cls.quizzes = state.cls.quizzes.filter(x=>x.slot_no!==slotNo);
+  render();
+  const ids = state.cls.students.map(s=>s.id);
+  if(ids.length) await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
+  await sb.from('quizzes').delete().eq('class_id', state.cls.id).eq('slot_no', slotNo);
+  logActivity('"'+label+'" öğesini sildi');
+  showToast(exWord+' silindi');
+}
+async function updateQuizDYB(sid, slotNo, field, value){
+  state.cls.quizScores[sid] = state.cls.quizScores[sid] || {};
+  state.cls.quizScores[sid][slotNo] = state.cls.quizScores[sid][slotNo] || {};
+  const numVal = value===''? null : (parseInt(value)||0);
+  state.cls.quizScores[sid][slotNo][field] = numVal;
+  const payload = {student_id:sid, slot_no:slotNo};
+  payload[field] = numVal;
+  await sb.from('quiz_scores').upsert(payload);
+  const s = studentById(sid);
+  const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
+  const fieldLabel = field==='dogru'?'doğru':(field==='yanlis'?'yanlış':'boş');
+  if(s && q) logActivity('"'+s.name+'" öğrencisine "'+q.label+'" için '+fieldLabel+' sayısını '+(numVal??'-')+' olarak girdi');
+  showToast('Kaydedildi');
+}
+async function importQuizScoresFromExcel(file, slotNo){
+  if(!file) return;
+  showToast('Dosya okunuyor...');
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(!rows.length){ showToast('Dosya boş görünüyor'); return; }
+    let startRow = 0;
+    const header = rows[0].map(c=>String(c).toLocaleLowerCase('tr'));
+    const looksLikeHeader = header.some(h=>h.includes('no')||h.includes('doğru')||h.includes('dogru'));
+    if(looksLikeHeader) startRow = 1;
+    const byNo = {};
+    state.cls.students.forEach(s=>{ if(s.no) byNo[String(s.no).trim()] = s; });
+    let matched = 0, unmatched = 0;
+    const upserts = [];
+    for(let r=startRow; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>String(c).trim()==='')) continue;
+      const no = String(row[0]??'').trim();
+      if(!no) continue;
+      const dogru = parseInt(row[1]); const yanlis = parseInt(row[2]); const bos = parseInt(row[3]);
+      const student = byNo[no];
+      if(!student){ unmatched++; continue; }
+      matched++;
+      upserts.push({student_id: student.id, slot_no: slotNo, dogru: isNaN(dogru)?null:dogru, yanlis: isNaN(yanlis)?null:yanlis, bos: isNaN(bos)?null:bos});
+    }
+    if(!upserts.length){ showToast('Eşleşen öğrenci bulunamadı (öğrenci numaralarını kontrol et)'); return; }
+    const { error } = await sb.from('quiz_scores').upsert(upserts);
+    if(error){ showToast('Hata: '+error.message); return; }
+    upserts.forEach(u=>{
+      state.cls.quizScores[u.student_id] = state.cls.quizScores[u.student_id] || {};
+      state.cls.quizScores[u.student_id][slotNo] = { dogru:u.dogru, yanlis:u.yanlis, bos:u.bos };
+    });
+    render();
+    const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
+    logActivity('"'+(q?q.label:'')+'" için Excelden '+matched+' öğrenci sonucu yükledi'+(unmatched?(' ('+unmatched+' satır eşleşmedi)'):''));
+    showToast(matched+' öğrenci güncellendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
+  }catch(err){ showToast('Dosya okunamadı: '+err.message); }
+}
+
+// ============== PERFORMANS (RUBRIK) ==============
+async function addPerfTask(label){
+  const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
+  const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
+  if(data && data[0]) state.cls.perfTasks.push(data[0]);
+  state.rubricLevel = label;
+  render();
+  logActivity('"'+label+'" performans ödevini ekledi');
+  showToast('Performans ödevi eklendi');
+}
+async function renamePerfTask(oldLabel, newLabel){
+  newLabel = newLabel.trim();
+  if(!newLabel || newLabel===oldLabel) return;
+  const t = state.cls.perfTasks.find(x=>x.label===oldLabel);
+  if(t) t.label = newLabel;
+  if(state.cls.rubrics[oldLabel]){ state.cls.rubrics[newLabel]=state.cls.rubrics[oldLabel]; delete state.cls.rubrics[oldLabel]; }
+  for(const sid in state.cls.rubricScores){
+    if(state.cls.rubricScores[sid][oldLabel]){ state.cls.rubricScores[sid][newLabel]=state.cls.rubricScores[sid][oldLabel]; delete state.cls.rubricScores[sid][oldLabel]; }
+  }
+  if(state.rubricLevel===oldLabel) state.rubricLevel = newLabel;
+  render();
+  await sb.from('performance_tasks').update({label:newLabel}).eq('class_id', state.cls.id).eq('label', oldLabel);
+  await sb.from('rubrics').update({level:newLabel}).eq('class_id', state.cls.id).eq('level', oldLabel);
+  const ids = state.cls.students.map(s=>s.id);
+  if(ids.length) await sb.from('rubric_scores').update({level:newLabel}).eq('level', oldLabel).in('student_id', ids);
+  logActivity('"'+oldLabel+'" performans ödevini "'+newLabel+'" olarak yeniden adlandırdı');
+  showToast('İsim güncellendi');
+}
+async function deletePerfTask(label){
+  state.cls.perfTasks = state.cls.perfTasks.filter(t=>t.label!==label);
+  delete state.cls.rubrics[label];
+  for(const sid in state.cls.rubricScores){ delete state.cls.rubricScores[sid][label]; }
+  if(state.rubricLevel===label) state.rubricLevel = (state.cls.perfTasks[0] && state.cls.perfTasks[0].label) || null;
+  state.view='perfTasks';
+  render();
+  await sb.from('performance_tasks').delete().eq('class_id', state.cls.id).eq('label', label);
+  await sb.from('rubrics').delete().eq('class_id', state.cls.id).eq('level', label);
+  const ids = state.cls.students.map(s=>s.id);
+  if(ids.length) await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
+  logActivity('"'+label+'" performans ödevini sildi');
+  showToast('Performans ödevi silindi');
+}
+async function saveRubric(level){
+  const criteria = state.cls.rubrics[level] || [];
+  await sb.from('rubrics').upsert({class_id: state.cls.id, level, criteria}, {onConflict:'class_id,level'});
+  logActivity('"'+level+'" performans rubriğini güncelledi');
+}
+function addCriterion(level){
+  state.cls.rubrics[level] = state.cls.rubrics[level] || [];
+  state.cls.rubrics[level].push({name:'Yeni Ölçüt', max:4, levels:[
+    {score:4, label:'Mükemmel', desc:''},
+    {score:3, label:'İyi', desc:''},
+    {score:2, label:'Orta', desc:''},
+    {score:1, label:'Geliştirilmesi Gerekir', desc:''},
+  ]});
+  saveRubric(level); render();
+}
+function deleteCriterion(level, ci){
+  if(!confirm('Bu ölçüt silinsin mi?')) return;
+  state.cls.rubrics[level].splice(ci,1);
+  saveRubric(level); render();
+}
+function updateCriterion(level, ci, field, value){
+  state.cls.rubrics[level][ci][field] = field==='max' ? (parseInt(value)||1) : value;
+  saveRubric(level);
+}
+function addLevel(level, ci){
+  const c = state.cls.rubrics[level][ci];
+  c.levels = c.levels || [];
+  c.levels.push({score:1, label:'Yeni Seviye', desc:''});
+  saveRubric(level); render();
+}
+function deleteLevel(level, ci, li){
+  state.cls.rubrics[level][ci].levels.splice(li,1);
+  saveRubric(level); render();
+}
+function updateLevel(level, ci, li, field, value){
+  const lv = state.cls.rubrics[level][ci].levels[li];
+  lv[field] = field==='score' ? (parseInt(value)||0) : value;
+  saveRubric(level);
+}
+async function setRubricScore(sid, level, critIndex, score){
+  state.cls.rubricScores[sid] = state.cls.rubricScores[sid] || {};
+  state.cls.rubricScores[sid][level] = state.cls.rubricScores[sid][level] || {};
+  state.cls.rubricScores[sid][level][critIndex] = score;
+  render();
+  await sb.from('rubric_scores').upsert({student_id:sid, level, criteria_index:critIndex, score});
+  const s = studentById(sid);
+  if(s) logActivity('"'+s.name+'" öğrencisine "'+level+'" rubriğinde puan girdi');
+  showToast('Puan kaydedildi');
 }
 
 // ============== RENDER DISPATCH ==============
 function render(){
-  renderTeacherbox();
   const app = document.getElementById('app');
+  if(state.page==='login') return renderLogin(app);
+  if(state.loading){ app.innerHTML = '<div class="empty"><div class="big">⏳</div>Yükleniyor...</div>'; return; }
   if(state.page==='home') return renderHome(app);
   if(state.page==='sinif_detail') return renderSinifDetail(app);
 }
 
-function statcard(icon,color,num,lbl){
-  return '<div class="statcard"><div class="icowrap" style="background:'+color+';">'+ic(icon)+'</div><div><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div></div>';
-}
-
 function renderHome(app){
-  const totalStudents = state.data.classes.reduce((a,c)=>a+c.students.length,0);
-  const totalHw = state.data.classes.reduce((a,c)=>a+(c.homeworks?c.homeworks.length:0),0);
-  const totalExams = state.data.classes.reduce((a,c)=>a+(c.topicExams?c.topicExams.length:0)+(c.denemeExams?c.denemeExams.length:0),0);
   app.innerHTML =
-    '<div class="pagehead"><h2>Hoş geldin, '+escapeHtml(state.data.teacherName||'Öğretmenim')+'</h2></div>' +
-    '<div class="statgrid">' +
-      statcard('school','var(--primary)', state.data.classes.length, 'Sınıf Sayısı') +
-      statcard('users','var(--teal)', totalStudents, 'Öğrenci Sayısı') +
-      statcard('flag','var(--amber)', totalHw, 'Tanımlı Ödev') +
-      statcard('target','var(--red)', totalExams, 'Tanımlı Sınav') +
-    '</div>' +
+    '<div class="pagehead"><h2>Hoş geldin, '+escapeHtml(state.username||'')+'</h2></div>' +
     '<div class="section-title"><span>Sınıflarım</span><span class="line"></span></div>' +
-    classGridHtml() +
-    '<p style="font-size:12px;color:var(--ink-faint);margin-top:22px;">Bütün veriler yalnızca bu tarayıcıda, bu bilgisayarda saklanır — internete veya bir sunucuya gönderilmez.</p>';
+    classGridHtml();
   wireClassCards(app);
-}
-
-function classTagColor(cls){
-  if(cls.hasDeneme) return 'var(--amber)';
-  if(cls.hasHomework || cls.hasTopicExam) return 'var(--primary)';
-  return 'var(--teal)';
 }
 function classGridHtml(){
   let html = '<div class="classgrid">';
-  state.data.classes.forEach(c=>{
-    let tags = '';
-    if(c.hasHomework) tags += '<span class="tag blue">Ödev Takibi</span>';
-    if(c.hasTopicExam) tags += '<span class="tag blue">Konu Sınavı</span>';
-    if(c.hasDeneme) tags += '<span class="tag amber">Deneme Sınavı</span>';
-    html += '<div class="classcard" style="--tag:'+classTagColor(c)+'" data-openclass="'+c.id+'">' +
+  state.classes.forEach(c=>{
+    html += '<div class="classcard" data-openclass="'+c.id+'">' +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
-      '<div class="meta">'+c.students.length+' öğrenci</div>' +
-      '<div class="tags">'+(tags||'<span class="tag teal">Boş sınıf</span>')+'</div>' +
+      '<div class="tags"><span class="tag blue">Ödev Takibi</span><span class="tag teal">Performans</span><span class="tag amber">'+examWord(c.name)+'</span></div>' +
     '</div>';
   });
   html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button></div>';
@@ -475,209 +816,159 @@ function classGridHtml(){
 }
 function wireClassCards(app){
   app.querySelectorAll('[data-openclass]').forEach(el=>{
-    el.onclick = ()=>{ state.page='sinif_detail'; state.classId=el.dataset.openclass; state.view='roster'; state.studentId=null; render(); };
+    el.onclick = async ()=>{ state.page='sinif_detail'; state.classId=el.dataset.openclass; state.view='roster'; state.studentId=null; await loadClassDetail(state.classId); };
   });
   const addBtn = document.getElementById('addClassCard');
   if(addBtn) addBtn.onclick = openNewClassModal;
 }
 
-function exportBackup(){
-  const blob = new Blob([JSON.stringify(state.data,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'sinif-panel-yedek-'+todayStr()+'.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 2000);
-  showToast('Yedek indirildi');
-}
-function importBackup(file){
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const parsed = JSON.parse(reader.result);
-      if(!parsed || !Array.isArray(parsed.classes)) throw new Error('geçersiz format');
-      state.data = parsed;
-      saveData();
-      render();
-      showToast('Yedek yüklendi');
-    }catch(e){ showToast('Dosya okunamadı: geçersiz yedek'); }
-  };
-  reader.readAsText(file);
-}
-
-// ============== CLASS DETAIL ==============
 function renderSinifDetail(app){
-  const cls = findClass(state.classId);
-  if(!cls){ state.page='home'; return render(); }
-  if(state.view==='roster') return renderRoster(app, cls);
-  if(state.view==='student') return renderStudentDetail(app, cls);
-  if(state.view==='homeworks') return renderHomeworksEdit(app, cls);
-  if(state.view==='hw_picker') return renderHwPicker(app, cls);
-  if(state.view==='quick_hw') return renderQuickHw(app, cls);
-  if(state.view==='topicExams') return renderExamListEdit(app, cls, 'topicExams', 'Konu Değerlendirme Sınavları');
-  if(state.view==='topic_picker') return renderExamPicker(app, cls, 'topicExams', 'topicScores', 'quick_topic');
-  if(state.view==='quick_topic') return renderQuickScore(app, cls, 'topicExams', 'topicScores', 'Konu Sınavı Not Girişi', 'topic_picker');
-  if(state.view==='denemeExams') return renderExamListEdit(app, cls, 'denemeExams', 'Deneme Sınavları');
-  if(state.view==='deneme_picker') return renderExamPicker(app, cls, 'denemeExams', 'denemeScores', 'quick_deneme');
-  if(state.view==='quick_deneme') return renderQuickScore(app, cls, 'denemeExams', 'denemeScores', 'Deneme Sınavı Not Girişi', 'deneme_picker');
+  if(!state.cls){ state.page='home'; return render(); }
+  if(state.view==='roster') return renderRoster(app);
+  if(state.view==='student') return renderStudentDetail(app);
+  if(state.view==='homeworks') return renderHomeworksEdit(app);
+  if(state.view==='hw_picker') return renderHwPicker(app);
+  if(state.view==='quick_hw') return renderQuickHw(app);
+  if(state.view==='perfTasks') return renderPerfTasksList(app);
+  if(state.view==='rubric') return renderRubric(app);
+  if(state.view==='quizzes') return renderQuizzesEdit(app);
+  if(state.view==='quiz_picker') return renderQuizPicker(app);
+  if(state.view==='quick_quiz') return renderQuickQuiz(app);
 }
-
 function backToRoster(){ state.view='roster'; state.studentId=null; render(); }
+function backToHome(){ state.page='home'; state.cls=null; render(); }
 
-function classInfobar(cls){
-  let html = '<div class="infobar">';
-  html += '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>';
-  if(cls.hasHomework){
-    const avg = hwClassAvg(cls);
-    html += '<div class="item"><div class="v">'+(avg!=null?avg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>';
-  }
-  if(cls.hasTopicExam){
-    const vals = cls.students.map(s=>scoreAvgForStudent(cls.topicScores,s.id)).filter(v=>v!=null);
-    const avg = vals.length? Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10 : null;
-    html += '<div class="item"><div class="v">'+(avg!=null?avg:'-')+'</div><div class="k">Konu Sınavı Ort.</div></div>';
-  }
-  if(cls.hasDeneme){
-    const vals = cls.students.map(s=>scoreAvgForStudent(cls.denemeScores,s.id)).filter(v=>v!=null);
-    const avg = vals.length? Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10 : null;
-    html += '<div class="item"><div class="v">'+(avg!=null?avg:'-')+'</div><div class="k">Deneme Sınavı Ort.</div></div>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function renderRoster(app, cls){
-  let actionRows = '<div class="actionrow">';
-  if(cls.hasHomework){
-    actionRows += '<button class="btn btn-soft" id="hwEditBtn">'+ic('flag')+'Ödevleri Düzenle</button>';
-    actionRows += '<button class="btn btn-primary" id="hwCheckBtn">'+ic('clipboard')+'Ödevleri Kontrol Et</button>';
-  }
-  actionRows += '</div>';
-  if(cls.hasTopicExam){
-    actionRows += '<div class="actionrow">' +
-      '<button class="btn btn-soft" id="topicEditBtn">'+ic('book')+'Konu Sınavlarını Düzenle</button>' +
-      '<button class="btn btn-primary" id="topicEnterBtn">'+ic('clipboard')+'Konu Sınavı Notu Gir</button></div>';
-  }
-  if(cls.hasDeneme){
-    actionRows += '<div class="actionrow">' +
-      '<button class="btn btn-soft" id="denemeEditBtn">'+ic('target')+'Deneme Sınavlarını Düzenle</button>' +
-      '<button class="btn btn-primary" id="denemeEnterBtn">'+ic('clipboard')+'Deneme Notu Gir</button></div>';
-  }
-
-  const sorted = sortedStudents(cls);
+function renderRoster(app){
+  const cls = state.cls;
+  const hwAvg = hwClassAvg(), perfAvg = perfClassAvg(), quizAvg = quizClassAvgOverall();
+  const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
+  const sorted = sortedStudents();
   const list = sorted.map(s=>{
-    let pillVal, pillClass='';
-    if(cls.hasHomework){ pillVal = hwPct(cls,s.id)+'%'; const p=hwPct(cls,s.id); pillClass = p<50?'low':(p<75?'mid':''); }
-    else if(cls.hasDeneme){ const a=scoreAvgForStudent(cls.denemeScores,s.id); pillVal = a!=null?a:'-'; pillClass = a!=null && a<300 ? 'low' : ''; }
-    else if(cls.hasTopicExam){ const a=scoreAvgForStudent(cls.topicScores,s.id); pillVal = a!=null?a:'-'; pillClass = a!=null && a<50 ? 'low' : ''; }
-    else { pillVal='-'; }
+    const p = hwPct(s.id);
+    const pillClass = p<50?'low':(p<75?'mid':'');
+    const absentTag = s.absent ? '<span style="font-size:10.5px;background:var(--red-soft);color:var(--red);padding:2px 7px;border-radius:6px;margin-right:6px;font-weight:700;">Yok</span>' : '';
     return '<div class="card rowcard" data-student="'+s.id+'">' +
       '<div class="no">'+(s.no||'')+'</div>' +
-      '<div class="name">'+escapeHtml(s.name)+'</div>' +
-      '<div class="pct '+pillClass+'">'+pillVal+'</div>' +
+      '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
+      '<div class="pct '+pillClass+'">'+p+'%</div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>';
   }).join('');
-
   app.innerHTML =
-    '<button class="backlink" id="toSinifList">'+ic('chevron').replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" style="transform:scaleX(-1)"')+' Sınıflarım listesine dön</button>' +
+    '<button class="backlink" id="toHome">'+ic('chevron')+' Sınıflarım listesine dön</button>' +
     '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
-    classInfobar(cls) +
-    actionRows +
+    '<div class="infobar">' +
+      '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
+      '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
+      '<div class="item"><div class="v">'+(perfAvg!=null?perfAvg:'-')+'</div><div class="k">Performans Ort.</div></div>' +
+      '<div class="item"><div class="v">'+(quizAvg!=null?quizAvg:'-')+'</div><div class="k">'+exWord+' Ort. Doğru</div></div>' +
+    '</div>' +
+    '<div class="section-title"><span>Ödev Takibi</span><span class="line"></span></div>' +
+    '<div class="actionrow"><button class="btn btn-soft" id="hwEditBtn">'+ic('flag')+'Ödevleri Düzenle</button><button class="btn btn-primary" id="hwCheckBtn">'+ic('clipboard')+'Ödevleri Kontrol Et</button></div>' +
+    '<div class="actionrow"><button class="btn btn-soft" id="quizEditBtn">'+ic('file')+exWordPl+' Düzenle</button><button class="btn btn-primary" id="quizEnterBtn">'+ic('clipboard')+exWord+' Notu Gir</button></div>' +
+    '<div class="section-title"><span>Performans</span><span class="line"></span></div>' +
+    '<div class="actionrow"><button class="btn btn-soft" id="perfEditBtn">'+ic('book')+'Performans Ödevlerini Düzenle</button><button class="btn btn-primary" id="perfEnterBtn">'+ic('target')+'Performans Notu Gir</button></div>' +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
-      '<button class="btn btn-outline btn-sm" id="sortNo">No</button>' +
-      '<button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
+      '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
     '</div>' +
     (list || '<div class="empty">Henüz öğrenci yok.</div>') +
-    '<button class="btn btn-soft" style="width:100%;justify-content:center;margin-top:12px;" id="addStudentBtn">'+ic('plus')+'Öğrenci Ekle</button>' +
+    '<button class="btn btn-soft full" id="addStudentBtn" style="margin-top:12px;">'+ic('plus')+'Öğrenci Ekle</button>' +
+    '<button class="btn btn-outline full" id="excelImportBtn" style="margin-top:8px;">'+ic('upload')+'Excelden Öğrenci Listesi Yükle</button>' +
+    '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
     '<div class="section-title"><span>Sınıf İşlemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
       '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
     '</div>';
 
-  document.getElementById('toSinifList').onclick = ()=>{ state.page='home'; render(); };
-  if(cls.hasHomework){
-    document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
-    document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
-  }
-  if(cls.hasTopicExam){
-    document.getElementById('topicEditBtn').onclick = ()=>{ state.view='topicExams'; render(); };
-    document.getElementById('topicEnterBtn').onclick = ()=>{ state.view='topic_picker'; render(); };
-  }
-  if(cls.hasDeneme){
-    document.getElementById('denemeEditBtn').onclick = ()=>{ state.view='denemeExams'; render(); };
-    document.getElementById('denemeEnterBtn').onclick = ()=>{ state.view='deneme_picker'; render(); };
-  }
+  document.getElementById('toHome').onclick = backToHome;
+  document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
+  document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
+  document.getElementById('perfEditBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
+  document.getElementById('perfEnterBtn').onclick = ()=>{
+    if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
+    if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+    state.view='rubric'; render();
+  };
+  document.getElementById('quizEditBtn').onclick = ()=>{ state.view='quizzes'; render(); };
+  document.getElementById('quizEnterBtn').onclick = ()=>{ state.view='quiz_picker'; render(); };
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
   app.querySelectorAll('[data-student]').forEach(el=>{
-    el.onclick = ()=>{ state.studentId = el.dataset.student; state.view='student'; render(); };
+    el.onclick = ()=>{ state.studentId=el.dataset.student; state.view='student'; render(); };
   });
   document.getElementById('addStudentBtn').onclick = ()=>{
     const name = prompt('Yeni öğrencinin adı soyadı:');
-    if(name && name.trim()){
-      const maxNo = Math.max(0, ...cls.students.map(s=>parseInt(s.no)||0));
-      cls.students.push({id:uid('st'), no:String(maxNo+1), name:name.trim(), note:''});
-      saveData(); render(); showToast('Öğrenci eklendi');
-    }
+    if(name && name.trim()) addStudent(name.trim());
   };
+  document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
+  document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
   document.getElementById('renameClassBtn').onclick = ()=>{
     const nn = prompt('Yeni sınıf adı:', cls.name);
-    if(nn && nn.trim()){ cls.name=nn.trim(); saveData(); render(); showToast('Sınıf adı güncellendi'); }
+    if(nn && nn.trim() && nn.trim()!==cls.name) renameClass(nn.trim());
   };
   document.getElementById('deleteClassBtn').onclick = ()=>{
-    if(confirm('"'+cls.name+'" sınıfı ve tüm verileri silinsin mi? Bu işlem geri alınamaz.')){
-      state.data.classes = state.data.classes.filter(c=>c.id!==cls.id);
-      saveData(); state.page='home'; render(); showToast('Sınıf silindi');
-    }
+    if(confirm('"'+cls.name+'" sınıfı ve tüm verileri silinsin mi? Bu işlem geri alınamaz.')) deleteClass();
   };
 }
 
-function renderStudentDetail(app, cls){
-  const s = findStudent(cls, state.studentId);
+function renderStudentDetail(app){
+  const s = studentById(state.studentId);
   if(!s){ return backToRoster(); }
+  const cls = state.cls;
   const today = todayStr();
+  const exWord = examWord(cls.name);
 
-  let hwSection = '';
-  if(cls.hasHomework){
-    const rows = cls.homeworks.map(h=>{
-      const future = !h.checkDate || h.checkDate>today;
-      const done = !!(cls.hwStatus[s.id]||{})[h.slotNo];
-      const dateLine = (h.hwDate?('Verildi: '+fmtDate(h.hwDate)):'Veriliş tarihi yok') + ' &middot; ' + (h.checkDate?('Kontrol: '+fmtDate(h.checkDate)):'Kontrol tarihi yok');
-      return '<div class="hwrow '+(future?'future':'')+'">' +
-        '<div class="topic"><div class="t">'+escapeHtml(h.topic||('Ödev #'+h.slotNo))+'</div><div class="d">'+dateLine+'</div></div>' +
-        '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slotNo+'" '+(future?'disabled':'')+'><span class="knob"></span></button>' +
-      '</div>';
-    }).join('');
-    hwSection = '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div><div class="card">'+(rows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>';
-  }
+  let quizSum=0, quizCount=0;
+  cls.quizzes.forEach(q=>{ const v=(cls.quizScores[s.id]||{})[q.slot_no]; if(v && v.dogru!=null){ quizSum+=v.dogru; quizCount++; } });
+  const quizAvg = quizCount>0 ? Math.round(quizSum/quizCount) : '-';
 
-  let topicSection = '';
-  if(cls.hasTopicExam){
-    const fields = cls.topicExams.map(e=>{
-      const v = (cls.topicScores[s.id]||{})[e.slotNo];
-      return '<div class="field"><label>'+escapeHtml(e.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(v!=null&&v!==''?v:'-')+'</div></div>';
-    }).join('');
-    topicSection = '<div class="section-title"><span>Konu Değerlendirme Sınavları</span><span class="line"></span></div><div class="detail-grid">'+(fields||'<div class="empty">Sınav tanımlı değil.</div>')+'</div>';
-  }
-  let denemeSection = '';
-  if(cls.hasDeneme){
-    const fields = cls.denemeExams.map(e=>{
-      const v = (cls.denemeScores[s.id]||{})[e.slotNo];
-      return '<div class="field"><label>'+escapeHtml(e.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(v!=null&&v!==''?v:'-')+'</div></div>';
-    }).join('');
-    denemeSection = '<div class="section-title"><span>Deneme Sınavları</span><span class="line"></span></div><div class="detail-grid">'+(fields||'<div class="empty">Deneme tanımlı değil.</div>')+'</div>';
-  }
+  let perfSum=0, perfCount=0;
+  cls.perfTasks.forEach(t=>{ const g=rubricTotal(s.id,t.label).grade; if(g!=null){ perfSum+=g; perfCount++; } });
+  const perfAvg = perfCount>0 ? Math.round(perfSum/perfCount) : '-';
+
+  const hwP = hwPct(s.id);
+
+  const quizHtml = cls.quizzes.map(q=>{
+    const v = (cls.quizScores[s.id]||{})[q.slot_no];
+    const disp = v ? ('D:'+(v.dogru??'-')+' Y:'+(v.yanlis??'-')+' B:'+(v.bos??'-')) : '-';
+    return '<div class="field"><label>'+escapeHtml(q.label)+'</label><div class="num" style="font-size:12.5px;font-weight:800;color:var(--primary-deep);">'+disp+'</div></div>';
+  }).join('');
+  const perfHtml = cls.perfTasks.map(t=>{
+    const total = rubricTotal(s.id, t.label);
+    return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
+  }).join('');
+  const hwRows = cls.homeworks.map(h=>{
+    const future = !h.check_date || h.check_date>today;
+    const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+    const dateLine = (h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'Veriliş tarihi yok') + ' &middot; ' + (h.check_date?('Kontrol: '+fmtDate(h.check_date)):'Kontrol tarihi yok');
+    return '<div class="hwrow '+(future?'future':'')+'">' +
+      '<div class="topic"><div class="t">'+escapeHtml(h.topic||('Ödev #'+h.slot_no))+'</div><div class="d">'+dateLine+'</div></div>' +
+      '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slot_no+'" '+(future?'disabled':'')+'><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
 
   app.innerHTML =
-    '<button class="backlink" id="toRoster">'+ic('chevron').replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" style="transform:scaleX(-1)"')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
-    '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2><div class="sub">No: '+(s.no||'-')+'</div></div>' +
-    topicSection + denemeSection + hwSection +
+    '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;">' +
+      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">No:</label>' +
+      '<input type="text" data-f="no" value="'+(s.no||'')+'" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--primary-deep);">' +
+    '</div>' +
+    '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
+    '<div class="infobar">' +
+      '<div class="item"><div class="v">'+quizAvg+'</div><div class="k">'+exWord+' Ort. Doğru</div></div>' +
+      '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' +
+      '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' +
+    '</div>' +
+    (cls.quizzes.length ? '<div class="section-title"><span>'+exWord+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    (cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
+    '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
-    '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.note||'')+'</textarea>' +
+    '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.teacher_note||'')+'</textarea>' +
     '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex;gap:10px;">' +
+      '<button class="btn btn-outline" id="absentBtn" style="flex:1;justify-content:center;">'+(s.absent?'Aktif Yap':'Okulda Yok İşaretle')+'</button>' +
       '<button class="btn btn-outline" id="renameStBtn" style="flex:1;justify-content:center;">Adını Düzenle</button>' +
       '<button class="btn btn-danger" id="deleteStBtn" style="flex:1;justify-content:center;">Öğrenciyi Sil</button>' +
     '</div>';
@@ -685,94 +976,72 @@ function renderStudentDetail(app, cls){
   document.getElementById('toRoster').onclick = backToRoster;
   app.querySelectorAll('.toggle').forEach(btn=>{
     if(btn.disabled) return;
-    btn.onclick = ()=>{
-      const slot = parseInt(btn.dataset.slot);
-      cls.hwStatus[s.id] = cls.hwStatus[s.id] || {};
-      cls.hwStatus[s.id][slot] = !cls.hwStatus[s.id][slot];
-      saveData(); render();
-    };
+    btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
   });
-  document.getElementById('noteBox').onblur = (e)=>{ s.note = e.target.value; saveData(); showToast('Not kaydedildi'); };
+  app.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
+  });
+  document.getElementById('noteBox').onblur = (e)=> updateStudentField(s.id, 'teacher_note', e.target.value);
+  document.getElementById('absentBtn').onclick = ()=> toggleAbsent(s.id);
   document.getElementById('renameStBtn').onclick = ()=>{
     const nn = prompt('Yeni ad soyad:', s.name);
-    if(nn && nn.trim()){ s.name=nn.trim(); saveData(); render(); showToast('İsim güncellendi'); }
+    if(nn && nn.trim() && nn.trim()!==s.name) renameStudent(s.id, nn.trim());
   };
   document.getElementById('deleteStBtn').onclick = ()=>{
-    if(confirm(s.name+' silinsin mi? Bu öğrenciye ait tüm veriler silinir.')){
-      cls.students = cls.students.filter(x=>x.id!==s.id);
-      delete cls.hwStatus[s.id]; delete cls.topicScores[s.id]; delete cls.denemeScores[s.id];
-      saveData(); backToRoster();
-      showToast('Öğrenci silindi');
-    }
+    if(confirm(s.name+' silinsin mi? Bu işlem geri alınamaz.')) deleteStudent(s.id);
   };
 }
 
-// ---- Homeworks edit ----
-function renderHomeworksEdit(app, cls){
-  const rows = cls.homeworks.map(h=>
+// ---- Homeworks ----
+function renderHomeworksEdit(app){
+  const rows = state.cls.homeworks.map(h=>
     '<div class="listedit-row">' +
-      '<div class="slot">#'+h.slotNo+'</div>' +
-      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slotNo+'" data-f="topic">' +
-      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(h.hwDate||'')+'" data-slot="'+h.slotNo+'" data-f="hwDate"></div>' +
-      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(h.checkDate||'')+'" data-slot="'+h.slotNo+'" data-f="checkDate"></div>' +
-      '<button class="iconbtn" data-del="'+h.slotNo+'">'+ic('trash')+'</button>' +
+      '<div class="slot">#'+h.slot_no+'</div>' +
+      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
+      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date"></div>' +
+      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(h.check_date||'')+'" data-slot="'+h.slot_no+'" data-f="check_date"></div>' +
+      '<button class="iconbtn" data-del="'+h.slot_no+'">'+ic('trash')+'</button>' +
     '</div>'
   ).join('');
   app.innerHTML =
-    '<button class="backlink" id="toRoster2">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>Ödevleri Düzenle</h2><div class="sub">'+escapeHtml(cls.name)+'</div></div>' +
+    '<button class="backlink" id="back1">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Ödevleri Düzenle</h2></div>' +
     '<div class="card">'+(rows||'<div class="empty">Henüz ödev yok.</div>')+'</div>' +
-    '<button class="btn btn-soft" style="width:100%;justify-content:center;" id="addHwBtn">'+ic('plus')+'Ödev Ekle</button>' +
+    '<button class="btn btn-soft full" id="addHwBtn">'+ic('plus')+'Ödev Ekle</button>' +
     '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Tamamlanma yüzdesi "Kontrol Tarihi" geldiğinde hesaba katılır.</p>';
-  document.getElementById('toRoster2').onclick = backToRoster;
-  document.getElementById('addHwBtn').onclick = ()=>{
-    const maxSlot = Math.max(0, ...cls.homeworks.map(h=>h.slotNo));
-    cls.homeworks.push({slotNo:maxSlot+1, topic:'', hwDate:null, checkDate:null});
-    saveData(); render();
-  };
+  document.getElementById('back1').onclick = backToRoster;
+  document.getElementById('addHwBtn').onclick = addHomework;
   app.querySelectorAll('input[data-f]').forEach(inp=>{
-    inp.onblur = ()=>{
-      const slot = parseInt(inp.dataset.slot);
-      const h = cls.homeworks.find(x=>x.slotNo===slot);
-      if(h){ h[inp.dataset.f] = inp.value || null; saveData(); showToast('Kaydedildi'); }
-    };
+    inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value||null);
   });
   app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=>{
-      const slot = parseInt(btn.dataset.del);
-      if(!confirm('Bu ödev silinsin mi?')) return;
-      cls.homeworks = cls.homeworks.filter(h=>h.slotNo!==slot);
-      cls.students.forEach(s=>{ if(cls.hwStatus[s.id]) delete cls.hwStatus[s.id][slot]; });
-      saveData(); render();
-    };
+    btn.onclick = ()=>{ if(confirm('Bu ödev silinsin mi?')) deleteHomework(parseInt(btn.dataset.del)); };
   });
 }
-
-function renderHwPicker(app, cls){
+function renderHwPicker(app){
   const today = todayStr();
-  const rows = cls.homeworks.map(h=>{
-    const checked = h.checkDate && h.checkDate<=today;
-    return '<div class="card rowcard" data-pick="'+h.slotNo+'">' +
-      '<div class="name">'+escapeHtml(h.topic||('Ödev #'+h.slotNo))+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Kontrol: '+(h.checkDate?fmtDate(h.checkDate):'belirtilmemiş')+(checked?'':' (henüz gelmedi)')+'</div></div>' +
+  const rows = state.cls.homeworks.map(h=>{
+    const checked = h.check_date && h.check_date<=today;
+    return '<div class="card rowcard" data-pick="'+h.slot_no+'">' +
+      '<div class="name">'+escapeHtml(h.topic||('Ödev #'+h.slot_no))+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Kontrol: '+(h.check_date?fmtDate(h.check_date):'belirtilmemiş')+(checked?'':' (henüz gelmedi)')+'</div></div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>';
   }).join('');
   app.innerHTML =
-    '<button class="backlink" id="toRoster3">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>Ödevleri Kontrol Et</h2><div class="sub">Kontrol etmek istediğin ödevi seç</div></div>' +
+    '<button class="backlink" id="back2">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Ödevleri Kontrol Et</h2></div>' +
     (rows || '<div class="empty">Henüz ödev tanımlanmadı.</div>');
-  document.getElementById('toRoster3').onclick = backToRoster;
+  document.getElementById('back2').onclick = backToRoster;
   app.querySelectorAll('[data-pick]').forEach(el=>{
     el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom='hw_picker'; state.view='quick_hw'; render(); };
   });
 }
-
-function renderQuickHw(app, cls){
+function renderQuickHw(app){
   const slotNo = state.activeSlot;
-  const hw = cls.homeworks.find(h=>h.slotNo===slotNo);
+  const hw = state.cls.homeworks.find(h=>h.slot_no===slotNo);
   if(!hw){ state.view='homeworks'; return render(); }
-  const rows = sortedStudents(cls).map(s=>{
-    const done = !!(cls.hwStatus[s.id]||{})[slotNo];
+  const rows = sortedStudents().map(s=>{
+    const done = !!(state.cls.hwStatus[s.id]||{})[slotNo];
     return '<div class="card" style="display:flex;align-items:center;gap:10px;">' +
       '<div class="no" style="width:22px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">'+(s.no||'')+'</div>' +
       '<div class="name" style="flex:1;font-size:14.5px;font-weight:700;">'+escapeHtml(s.name)+'</div>' +
@@ -780,129 +1049,248 @@ function renderQuickHw(app, cls){
     '</div>';
   }).join('');
   app.innerHTML =
-    '<button class="backlink" id="toHwPicker">'+ic('chevron')+' Ödev listesine dön</button>' +
-    '<div class="infobar"><div class="item"><div class="v" style="font-size:15px;">'+escapeHtml(hw.topic||('Ödev #'+hw.slotNo))+'</div><div class="k">Kontrol: '+(hw.checkDate?fmtDate(hw.checkDate):'belirtilmemiş')+'</div></div></div>' +
+    '<button class="backlink" id="back3">'+ic('chevron')+' Ödev listesine dön</button>' +
+    '<div class="infobar"><div class="item"><div class="v" style="font-size:15px;">'+escapeHtml(hw.topic||('Ödev #'+hw.slot_no))+'</div><div class="k">Kontrol: '+(hw.check_date?fmtDate(hw.check_date):'belirtilmemiş')+'</div></div></div>' +
     '<div class="section-title"><span>Ödevi Yapanları İşaretle</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Öğrenci yok.</div>');
-  document.getElementById('toHwPicker').onclick = ()=>{ state.view = state.checkFrom || 'hw_picker'; render(); };
+  document.getElementById('back3').onclick = ()=>{ state.view = state.checkFrom||'hw_picker'; render(); };
   app.querySelectorAll('.toggle').forEach(btn=>{
-    btn.onclick = ()=>{
-      const sid = btn.dataset.id;
-      cls.hwStatus[sid] = cls.hwStatus[sid] || {};
-      cls.hwStatus[sid][slotNo] = !cls.hwStatus[sid][slotNo];
-      saveData(); renderQuickHw(app, cls);
-    };
+    btn.onclick = async ()=>{ await toggleHw(btn.dataset.id, slotNo); render(); };
   });
 }
 
-// ---- Generic exam list edit (topic / deneme) ----
-function renderExamListEdit(app, cls, examKey, title){
-  const exams = cls[examKey];
-  const scoreKey = examKey==='topicExams' ? 'topicScores' : 'denemeScores';
-  const rows = exams.map(e=>{
-    const avg = examClassAvg(cls[scoreKey], cls.students, e.slotNo);
+// ---- Performans (rubrik) ----
+function renderPerfTasksList(app){
+  const rows = state.cls.perfTasks.map(t=>{
+    const avg = perfTaskAvg(t.label);
     return '<div class="listedit-row">' +
-      '<div class="slot">#'+e.slotNo+'</div>' +
-      '<input type="text" value="'+escapeHtml(e.label||'')+'" data-slot="'+e.slotNo+'">' +
+      '<input type="text" value="'+escapeHtml(t.label)+'" data-old="'+escapeHtml(t.label)+'">' +
       '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;padding-top:9px;white-space:nowrap;">Ort: '+(avg!=null?avg:'-')+'</div>' +
-      '<button class="btn btn-soft btn-sm" data-enter="'+e.slotNo+'">Not Gir</button>' +
-      '<button class="iconbtn" data-del="'+e.slotNo+'">'+ic('trash')+'</button>' +
+      '<button class="btn btn-soft btn-sm" data-enter="'+escapeHtml(t.label)+'">Not Gir</button>' +
+      '<button class="iconbtn" data-del="'+escapeHtml(t.label)+'">'+ic('trash')+'</button>' +
     '</div>';
   }).join('');
   app.innerHTML =
-    '<button class="backlink" id="toRoster4">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>'+title+'</h2><div class="sub">'+escapeHtml(cls.name)+'</div></div>' +
-    '<div class="card">'+(rows||'<div class="empty">Henüz sınav yok.</div>')+'</div>' +
-    '<button class="btn btn-soft" style="width:100%;justify-content:center;" id="addExamBtn">'+ic('plus')+'Yeni Sınav Ekle</button>';
-  document.getElementById('toRoster4').onclick = backToRoster;
-  document.getElementById('addExamBtn').onclick = ()=>{
-    const label = prompt('Yeni sınavın adı (örn. 2. '+(examKey==='topicExams'?'Konu Değerlendirme Sınavı':'Deneme Sınavı')+'):');
-    if(label && label.trim()){
-      const maxSlot = Math.max(0, ...exams.map(e=>e.slotNo));
-      exams.push({slotNo:maxSlot+1, label:label.trim()});
-      saveData(); render();
-    }
+    '<button class="backlink" id="back4">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Performans Ödevlerini Düzenle</h2></div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henüz performans ödevi yok.</div>')+'</div>' +
+    '<button class="btn btn-soft full" id="addPerfBtn">'+ic('plus')+'Yeni Performans Ödevi Ekle</button>';
+  document.getElementById('back4').onclick = backToRoster;
+  document.getElementById('addPerfBtn').onclick = ()=>{
+    const label = prompt('Yeni performans ödevinin adı:');
+    if(label && label.trim()) addPerfTask(label.trim());
   };
-  app.querySelectorAll('input[data-slot]').forEach(inp=>{
-    inp.onblur = ()=>{
-      const slot = parseInt(inp.dataset.slot);
-      const e = exams.find(x=>x.slotNo===slot);
-      if(e){ e.label = inp.value; saveData(); showToast('Kaydedildi'); }
-    };
+  app.querySelectorAll('input[data-old]').forEach(inp=>{
+    inp.onblur = ()=>{ if(inp.value.trim() && inp.value.trim()!==inp.dataset.old) renamePerfTask(inp.dataset.old, inp.value.trim()); };
   });
   app.querySelectorAll('[data-enter]').forEach(btn=>{
-    btn.onclick = ()=>{
-      state.activeSlot = parseInt(btn.dataset.enter);
-      state.checkFrom = examKey==='topicExams' ? 'topicExams' : 'denemeExams';
-      state.view = examKey==='topicExams' ? 'quick_topic' : 'quick_deneme';
-      render();
-    };
+    btn.onclick = ()=>{ state.rubricLevel = btn.dataset.enter; state.view='rubric'; render(); };
   });
   app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=>{
-      const slot = parseInt(btn.dataset.del);
-      if(!confirm('Bu sınav silinsin mi? Öğrencilerin bu sınava ait notları da silinir.')) return;
-      cls[examKey] = exams.filter(e=>e.slotNo!==slot);
-      cls.students.forEach(s=>{ if(cls[scoreKey][s.id]) delete cls[scoreKey][s.id][slot]; });
-      saveData(); render();
-    };
+    btn.onclick = ()=>{ if(confirm('"'+btn.dataset.del+'" silinsin mi? Tüm ölçüt ve puanlar da silinir.')) deletePerfTask(btn.dataset.del); };
   });
 }
 
-function renderExamPicker(app, cls, examKey, scoreKey, nextView){
-  const exams = cls[examKey];
-  const rows = exams.map(e=>{
-    const avg = examClassAvg(cls[scoreKey], cls.students, e.slotNo);
-    return '<div class="card rowcard" data-pick="'+e.slotNo+'">' +
-      '<div class="name">'+escapeHtml(e.label)+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Sınıf ortalaması: '+(avg!=null?avg:'henüz not yok')+'</div></div>' +
+function renderRubric(app){
+  const level = state.rubricLevel;
+  const crit = state.cls.rubrics[level] || [];
+  const sid = state.studentId;
+  const totals = sid ? rubricTotal(sid, level) : {sum:0,max:0,grade:null};
+
+  const topControls =
+    '<button class="backlink" id="back5">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Performans Ödevi</h2><div class="sub">'+escapeHtml(level||'')+'</div></div>' +
+    '<div class="levelpicker">' +
+      state.cls.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
+      '<button class="btn btn-outline btn-sm" id="editToggle">'+(state.rubricEdit?'Bitti':'Ölçütleri Düzenle')+'</button>' +
+    '</div>';
+
+  let body = '';
+  if(state.rubricEdit){
+    body = crit.map((c,ci)=>{
+      const levels = (c.levels||[]).map((lv,li)=>
+        '<div class="levelcard" style="cursor:default;">' +
+          '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
+            '<input type="number" value="'+lv.score+'" data-ci="'+ci+'" data-li="'+li+'" data-f="score" style="width:56px;border:1px solid var(--line);border-radius:6px;padding:6px;font-weight:700;">' +
+            '<input type="text" value="'+escapeHtml(lv.label)+'" data-ci="'+ci+'" data-li="'+li+'" data-f="label" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px;">' +
+            '<button class="iconbtn" data-dellvl="'+ci+':'+li+'">'+ic('trash')+'</button>' +
+          '</div>' +
+          '<textarea data-ci="'+ci+'" data-li="'+li+'" data-f="desc" placeholder="Açıklama" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px;font-family:inherit;font-size:12.5px;min-height:40px;">'+escapeHtml(lv.desc||'')+'</textarea>' +
+        '</div>'
+      ).join('');
+      return '<div class="critblock">' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+          '<input type="text" value="'+escapeHtml(c.name)+'" data-crit="'+ci+'" data-f="name" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:8px;font-weight:700;">' +
+          'Tam puan: <input type="number" value="'+c.max+'" data-crit="'+ci+'" data-f="max" style="width:50px;border:1px solid var(--line);border-radius:6px;padding:8px;">' +
+          '<button class="btn btn-danger btn-sm" data-delcrit="'+ci+'">Sil</button>' +
+        '</div>' + levels +
+        '<button class="btn btn-outline btn-sm" data-addlvl="'+ci+'" style="width:100%;justify-content:center;margin-top:4px;">+ Seviye Ekle</button>' +
+      '</div>';
+    }).join('') + '<button class="btn btn-soft full" id="addCritBtn">'+ic('plus')+'Yeni Ölçüt Ekle</button>';
+  } else {
+    const summaryRows = state.cls.students.map(s=>{
+      const t = rubricTotal(s.id, level);
+      const badge = t.grade!=null?t.grade:'-';
+      const low = t.grade!=null && t.grade<60;
+      return '<div class="card rowcard" data-sumid="'+s.id+'" style="margin-bottom:6px;">' +
+        '<div class="name">'+escapeHtml(s.name)+'</div>' +
+        '<div class="pct '+(low?'low':'')+'">'+badge+'</div>' +
+        '<div class="chev">'+ic('chevron')+'</div>' +
+      '</div>';
+    }).join('');
+    const studentButtons = state.cls.students.map(s=>
+      '<button class="'+(s.id===sid?'active':'')+'" data-id="'+s.id+'">'+escapeHtml(s.name)+'</button>'
+    ).join('');
+    const critHtml = crit.map((c,ci)=>{
+      const curScore = sid ? ((state.cls.rubricScores[sid]||{})[level]||{})[ci] : null;
+      const levels = (c.levels||[]).map(lv=>
+        '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
+          '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
+          '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
+        '</div>'
+      ).join('');
+      return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
+    }).join('');
+    body = (crit.length===0 ? '<div class="empty">Bu performans için henüz ölçüt tanımlanmadı.<br>Yukarıdaki "Ölçütleri Düzenle" ile ekleyebilirsin.</div>' :
+      '<div class="section-title"><span>Sınıf Özeti</span><span class="line"></span></div>' +
+      (summaryRows || '<div class="empty">Öğrenci yok.</div>') +
+      '<div class="section-title" style="margin-top:24px;"><span>'+(sid?'Puanlama':'Puanlamak için öğrenci seç')+'</span><span class="line"></span></div>' +
+      '<div class="studentpicker">'+studentButtons+'</div>' +
+      (sid ?
+        '<div class="rubricsummary">' +
+          '<div><div class="lbl">Toplam</div><div class="num">'+totals.sum+' / '+totals.max+'</div></div>' +
+          '<div><div class="lbl">Not</div><div class="num">'+(totals.grade!=null?totals.grade:'-')+'</div></div>' +
+        '</div>' + critHtml
+        : ''));
+  }
+
+  app.innerHTML = topControls + body;
+
+  document.getElementById('back5').onclick = backToRoster;
+  document.getElementById('editToggle').onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
+  app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
+    b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
+  });
+
+  if(state.rubricEdit){
+    document.getElementById('addCritBtn').onclick = ()=> addCriterion(level);
+    app.querySelectorAll('[data-delcrit]').forEach(b=> b.onclick = ()=> deleteCriterion(level, parseInt(b.dataset.delcrit)));
+    app.querySelectorAll('[data-addlvl]').forEach(b=> b.onclick = ()=> addLevel(level, parseInt(b.dataset.addlvl)));
+    app.querySelectorAll('[data-dellvl]').forEach(b=>{
+      b.onclick = ()=>{ const [ci,li]=b.dataset.dellvl.split(':').map(Number); deleteLevel(level,ci,li); };
+    });
+    app.querySelectorAll('input[data-crit]').forEach(inp=>{
+      inp.onblur = ()=> updateCriterion(level, parseInt(inp.dataset.crit), inp.dataset.f, inp.value);
+    });
+    app.querySelectorAll('[data-ci][data-li]').forEach(inp=>{
+      inp.onblur = ()=> updateLevel(level, parseInt(inp.dataset.ci), parseInt(inp.dataset.li), inp.dataset.f, inp.value);
+    });
+  } else {
+    app.querySelectorAll('[data-sumid]').forEach(el=>{
+      el.onclick = ()=>{ state.studentId = el.dataset.sumid; render(); };
+    });
+    app.querySelectorAll('.studentpicker button').forEach(b=>{
+      b.onclick = ()=>{ state.studentId = b.dataset.id; render(); };
+    });
+    app.querySelectorAll('.levelcard[data-ci]').forEach(el=>{
+      el.onclick = ()=>{
+        const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
+        const cur = ((state.cls.rubricScores[sid]||{})[level]||{})[ci];
+        setRubricScore(sid, level, ci, cur===score?null:score);
+      };
+    });
+  }
+}
+
+// ---- Quiz / KDS / Deneme ----
+function renderQuizzesEdit(app){
+  const exWord = examWord(), exWordPl = examWordPlural();
+  const rows = state.cls.quizzes.map(q=>
+    '<div class="listedit-row">' +
+      '<div class="slot">#'+q.slot_no+'</div>' +
+      '<input type="text" value="'+escapeHtml(q.label||'')+'" data-slot="'+q.slot_no+'">' +
+      '<button class="iconbtn" data-del="'+q.slot_no+'">'+ic('trash')+'</button>' +
+    '</div>'
+  ).join('');
+  app.innerHTML =
+    '<button class="backlink" id="back6">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>'+exWordPl+' Düzenle</h2></div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henüz '+exWord+' yok.</div>')+'</div>' +
+    '<button class="btn btn-soft full" id="addQuizBtn">'+ic('plus')+exWord+' Ekle</button>';
+  document.getElementById('back6').onclick = backToRoster;
+  document.getElementById('addQuizBtn').onclick = addQuiz;
+  app.querySelectorAll('input[data-slot]').forEach(inp=>{
+    inp.onblur = ()=> renameQuiz(parseInt(inp.dataset.slot), inp.value);
+  });
+  app.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
+  });
+}
+function renderQuizPicker(app){
+  const exWord = examWord();
+  const rows = state.cls.quizzes.map(q=>{
+    const avg = quizSlotAvgDYB(q.slot_no);
+    return '<div class="card rowcard" data-pick="'+q.slot_no+'">' +
+      '<div class="name">'+escapeHtml(q.label)+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Ort. Doğru: '+(avg&&avg.dogru!=null?avg.dogru:'henüz not yok')+'</div></div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>';
   }).join('');
   app.innerHTML =
-    '<button class="backlink" id="toRoster5">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>Not Girmek İçin Sınav Seç</h2></div>' +
-    (rows || '<div class="empty">Henüz sınav tanımlanmadı.</div>');
-  document.getElementById('toRoster5').onclick = backToRoster;
+    '<button class="backlink" id="back7">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Not Girmek İçin '+exWord+' Seç</h2></div>' +
+    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı.</div>');
+  document.getElementById('back7').onclick = backToRoster;
   app.querySelectorAll('[data-pick]').forEach(el=>{
-    el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom = (nextView==='quick_topic'?'topic_picker':'deneme_picker'); state.view=nextView; render(); };
+    el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom='quiz_picker'; state.view='quick_quiz'; render(); };
   });
 }
-
-function renderQuickScore(app, cls, examKey, scoreKey, title, backView){
+function renderQuickQuiz(app){
   const slotNo = state.activeSlot;
-  const exam = cls[examKey].find(e=>e.slotNo===slotNo);
-  if(!exam){ state.view = examKey==='topicExams'?'topicExams':'denemeExams'; return render(); }
-  const rows = sortedStudents(cls).map(s=>{
-    const val = (cls[scoreKey][s.id]||{})[slotNo];
+  const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
+  if(!q){ state.view='quizzes'; return render(); }
+  const rows = sortedStudents().map(s=>{
+    const v = (state.cls.quizScores[s.id]||{})[slotNo] || {};
     return '<div class="scorerow">' +
       '<div class="no">'+(s.no||'')+'</div>' +
       '<div class="name">'+escapeHtml(s.name)+'</div>' +
-      '<input type="text" inputmode="decimal" placeholder="-" value="'+(val!=null?escapeHtml(String(val)):'')+'" data-id="'+s.id+'">' +
+      '<input type="text" inputmode="numeric" placeholder="D" title="Doğru" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-f="dogru" style="width:50px;">' +
+      '<input type="text" inputmode="numeric" placeholder="Y" title="Yanlış" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-f="yanlis" style="width:50px;">' +
+      '<input type="text" inputmode="numeric" placeholder="B" title="Boş" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-f="bos" style="width:50px;">' +
     '</div>';
   }).join('');
-  const avg = examClassAvg(cls[scoreKey], cls.students, slotNo);
+  const avg = quizSlotAvgDYB(slotNo);
   app.innerHTML =
-    '<button class="backlink" id="toPicker">'+ic('chevron')+' Sınav listesine dön</button>' +
-    '<div class="pagehead"><h2>'+escapeHtml(exam.label)+'</h2><div class="sub">'+title+'</div></div>' +
-    '<div class="card scoregrid">'+(rows || '<div class="empty">Öğrenci yok.</div>')+'</div>' +
-    '<div class="infobar" style="margin-top:14px;"><div class="item"><div class="v" id="avgVal">'+(avg!=null?avg:'-')+'</div><div class="k">Sınıf Ortalaması</div></div></div>';
-  document.getElementById('toPicker').onclick = ()=>{ state.view = backView; render(); };
+    '<button class="backlink" id="back8">'+ic('chevron')+' Not girme listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(q.label)+'</h2></div>' +
+    '<button class="btn btn-outline full" id="excelQuizBtn" style="margin-bottom:14px;">'+ic('upload')+'Excelden Yükle (No, Doğru, Yanlış, Boş)</button>' +
+    '<input type="file" id="excelQuizFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    '<div class="card" style="padding:8px 4px;">' +
+      '<div class="scorerow" style="font-size:10.5px;color:var(--ink-soft);font-weight:800;text-transform:uppercase;">' +
+        '<div class="no"></div><div class="name"></div><div style="width:50px;text-align:center;">D</div><div style="width:50px;text-align:center;">Y</div><div style="width:50px;text-align:center;">B</div>' +
+      '</div>' +
+      (rows || '<div class="empty">Öğrenci yok.</div>') +
+    '</div>' +
+    '<div class="infobar" style="margin-top:14px;">' +
+      '<div class="item"><div class="v">'+(avg&&avg.dogru!=null?avg.dogru:'-')+'</div><div class="k">Ort. Doğru</div></div>' +
+      '<div class="item"><div class="v">'+(avg&&avg.yanlis!=null?avg.yanlis:'-')+'</div><div class="k">Ort. Yanlış</div></div>' +
+      '<div class="item"><div class="v">'+(avg&&avg.bos!=null?avg.bos:'-')+'</div><div class="k">Ort. Boş</div></div>' +
+    '</div>';
+  document.getElementById('back8').onclick = ()=>{ state.view = state.checkFrom||'quiz_picker'; render(); };
+  document.getElementById('excelQuizBtn').onclick = ()=> document.getElementById('excelQuizFile').click();
+  document.getElementById('excelQuizFile').onchange = (e)=> importQuizScoresFromExcel(e.target.files[0], slotNo);
   app.querySelectorAll('input[data-id]').forEach(inp=>{
-    inp.onblur = ()=>{
-      const sid = inp.dataset.id;
-      const v = inp.value.trim();
-      cls[scoreKey][sid] = cls[scoreKey][sid] || {};
-      cls[scoreKey][sid][slotNo] = v==='' ? null : v;
-      saveData();
-      const a = examClassAvg(cls[scoreKey], cls.students, slotNo);
-      document.getElementById('avgVal').textContent = a!=null?a:'-';
-      showToast('Kaydedildi');
-    };
+    inp.onblur = ()=> updateQuizDYB(inp.dataset.id, slotNo, inp.dataset.f, inp.value);
   });
 }
 
 // ============== INIT ==============
-render();
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){ await startApp(); } else { state.page='login'; render(); }
+  sb.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT'){ document.getElementById('teacherBtn').style.display='none'; }
+  });
+})();
 </script>
 </body>
 </html>
