@@ -464,4 +464,445 @@ function classGridHtml(){
     if(c.hasHomework) tags += '<span class="tag blue">Ödev Takibi</span>';
     if(c.hasTopicExam) tags += '<span class="tag blue">Konu Sınavı</span>';
     if(c.hasDeneme) tags += '<span class="tag amber">Deneme Sınavı</span>';
-    html +=
+    html += '<div class="classcard" style="--tag:'+classTagColor(c)+'" data-openclass="'+c.id+'">' +
+      '<h3>'+escapeHtml(c.name)+'</h3>' +
+      '<div class="meta">'+c.students.length+' öğrenci</div>' +
+      '<div class="tags">'+(tags||'<span class="tag teal">Boş sınıf</span>')+'</div>' +
+    '</div>';
+  });
+  html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button></div>';
+  return html;
+}
+function wireClassCards(app){
+  app.querySelectorAll('[data-openclass]').forEach(el=>{
+    el.onclick = ()=>{ state.page='sinif_detail'; state.classId=el.dataset.openclass; state.view='roster'; state.studentId=null; render(); };
+  });
+  const addBtn = document.getElementById('addClassCard');
+  if(addBtn) addBtn.onclick = openNewClassModal;
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state.data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sinif-panel-yedek-'+todayStr()+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  showToast('Yedek indirildi');
+}
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed || !Array.isArray(parsed.classes)) throw new Error('geçersiz format');
+      state.data = parsed;
+      saveData();
+      render();
+      showToast('Yedek yüklendi');
+    }catch(e){ showToast('Dosya okunamadı: geçersiz yedek'); }
+  };
+  reader.readAsText(file);
+}
+
+// ============== CLASS DETAIL ==============
+function renderSinifDetail(app){
+  const cls = findClass(state.classId);
+  if(!cls){ state.page='home'; return render(); }
+  if(state.view==='roster') return renderRoster(app, cls);
+  if(state.view==='student') return renderStudentDetail(app, cls);
+  if(state.view==='homeworks') return renderHomeworksEdit(app, cls);
+  if(state.view==='hw_picker') return renderHwPicker(app, cls);
+  if(state.view==='quick_hw') return renderQuickHw(app, cls);
+  if(state.view==='topicExams') return renderExamListEdit(app, cls, 'topicExams', 'Konu Değerlendirme Sınavları');
+  if(state.view==='topic_picker') return renderExamPicker(app, cls, 'topicExams', 'topicScores', 'quick_topic');
+  if(state.view==='quick_topic') return renderQuickScore(app, cls, 'topicExams', 'topicScores', 'Konu Sınavı Not Girişi', 'topic_picker');
+  if(state.view==='denemeExams') return renderExamListEdit(app, cls, 'denemeExams', 'Deneme Sınavları');
+  if(state.view==='deneme_picker') return renderExamPicker(app, cls, 'denemeExams', 'denemeScores', 'quick_deneme');
+  if(state.view==='quick_deneme') return renderQuickScore(app, cls, 'denemeExams', 'denemeScores', 'Deneme Sınavı Not Girişi', 'deneme_picker');
+}
+
+function backToRoster(){ state.view='roster'; state.studentId=null; render(); }
+
+function classInfobar(cls){
+  let html = '<div class="infobar">';
+  html += '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>';
+  if(cls.hasHomework){
+    const avg = hwClassAvg(cls);
+    html += '<div class="item"><div class="v">'+(avg!=null?avg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>';
+  }
+  if(cls.hasTopicExam){
+    const vals = cls.students.map(s=>scoreAvgForStudent(cls.topicScores,s.id)).filter(v=>v!=null);
+    const avg = vals.length? Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10 : null;
+    html += '<div class="item"><div class="v">'+(avg!=null?avg:'-')+'</div><div class="k">Konu Sınavı Ort.</div></div>';
+  }
+  if(cls.hasDeneme){
+    const vals = cls.students.map(s=>scoreAvgForStudent(cls.denemeScores,s.id)).filter(v=>v!=null);
+    const avg = vals.length? Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10 : null;
+    html += '<div class="item"><div class="v">'+(avg!=null?avg:'-')+'</div><div class="k">Deneme Sınavı Ort.</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderRoster(app, cls){
+  let actionRows = '<div class="actionrow">';
+  if(cls.hasHomework){
+    actionRows += '<button class="btn btn-soft" id="hwEditBtn">'+ic('flag')+'Ödevleri Düzenle</button>';
+    actionRows += '<button class="btn btn-primary" id="hwCheckBtn">'+ic('clipboard')+'Ödevleri Kontrol Et</button>';
+  }
+  actionRows += '</div>';
+  if(cls.hasTopicExam){
+    actionRows += '<div class="actionrow">' +
+      '<button class="btn btn-soft" id="topicEditBtn">'+ic('book')+'Konu Sınavlarını Düzenle</button>' +
+      '<button class="btn btn-primary" id="topicEnterBtn">'+ic('clipboard')+'Konu Sınavı Notu Gir</button></div>';
+  }
+  if(cls.hasDeneme){
+    actionRows += '<div class="actionrow">' +
+      '<button class="btn btn-soft" id="denemeEditBtn">'+ic('target')+'Deneme Sınavlarını Düzenle</button>' +
+      '<button class="btn btn-primary" id="denemeEnterBtn">'+ic('clipboard')+'Deneme Notu Gir</button></div>';
+  }
+
+  const sorted = sortedStudents(cls);
+  const list = sorted.map(s=>{
+    let pillVal, pillClass='';
+    if(cls.hasHomework){ pillVal = hwPct(cls,s.id)+'%'; const p=hwPct(cls,s.id); pillClass = p<50?'low':(p<75?'mid':''); }
+    else if(cls.hasDeneme){ const a=scoreAvgForStudent(cls.denemeScores,s.id); pillVal = a!=null?a:'-'; pillClass = a!=null && a<300 ? 'low' : ''; }
+    else if(cls.hasTopicExam){ const a=scoreAvgForStudent(cls.topicScores,s.id); pillVal = a!=null?a:'-'; pillClass = a!=null && a<50 ? 'low' : ''; }
+    else { pillVal='-'; }
+    return '<div class="card rowcard" data-student="'+s.id+'">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name">'+escapeHtml(s.name)+'</div>' +
+      '<div class="pct '+pillClass+'">'+pillVal+'</div>' +
+      '<div class="chev">'+ic('chevron')+'</div>' +
+    '</div>';
+  }).join('');
+
+  app.innerHTML =
+    '<button class="backlink" id="toSinifList">'+ic('chevron').replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" style="transform:scaleX(-1)"')+' Sınıflarım listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
+    classInfobar(cls) +
+    actionRows +
+    '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
+      '<button class="btn btn-outline btn-sm" id="sortNo">No</button>' +
+      '<button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
+    '</div>' +
+    (list || '<div class="empty">Henüz öğrenci yok.</div>') +
+    '<button class="btn btn-soft" style="width:100%;justify-content:center;margin-top:12px;" id="addStudentBtn">'+ic('plus')+'Öğrenci Ekle</button>' +
+    '<div class="section-title"><span>Sınıf İşlemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
+      '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
+    '</div>';
+
+  document.getElementById('toSinifList').onclick = ()=>{ state.page='home'; render(); };
+  if(cls.hasHomework){
+    document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
+    document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
+  }
+  if(cls.hasTopicExam){
+    document.getElementById('topicEditBtn').onclick = ()=>{ state.view='topicExams'; render(); };
+    document.getElementById('topicEnterBtn').onclick = ()=>{ state.view='topic_picker'; render(); };
+  }
+  if(cls.hasDeneme){
+    document.getElementById('denemeEditBtn').onclick = ()=>{ state.view='denemeExams'; render(); };
+    document.getElementById('denemeEnterBtn').onclick = ()=>{ state.view='deneme_picker'; render(); };
+  }
+  document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
+  document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
+  app.querySelectorAll('[data-student]').forEach(el=>{
+    el.onclick = ()=>{ state.studentId = el.dataset.student; state.view='student'; render(); };
+  });
+  document.getElementById('addStudentBtn').onclick = ()=>{
+    const name = prompt('Yeni öğrencinin adı soyadı:');
+    if(name && name.trim()){
+      const maxNo = Math.max(0, ...cls.students.map(s=>parseInt(s.no)||0));
+      cls.students.push({id:uid('st'), no:String(maxNo+1), name:name.trim(), note:''});
+      saveData(); render(); showToast('Öğrenci eklendi');
+    }
+  };
+  document.getElementById('renameClassBtn').onclick = ()=>{
+    const nn = prompt('Yeni sınıf adı:', cls.name);
+    if(nn && nn.trim()){ cls.name=nn.trim(); saveData(); render(); showToast('Sınıf adı güncellendi'); }
+  };
+  document.getElementById('deleteClassBtn').onclick = ()=>{
+    if(confirm('"'+cls.name+'" sınıfı ve tüm verileri silinsin mi? Bu işlem geri alınamaz.')){
+      state.data.classes = state.data.classes.filter(c=>c.id!==cls.id);
+      saveData(); state.page='home'; render(); showToast('Sınıf silindi');
+    }
+  };
+}
+
+function renderStudentDetail(app, cls){
+  const s = findStudent(cls, state.studentId);
+  if(!s){ return backToRoster(); }
+  const today = todayStr();
+
+  let hwSection = '';
+  if(cls.hasHomework){
+    const rows = cls.homeworks.map(h=>{
+      const future = !h.checkDate || h.checkDate>today;
+      const done = !!(cls.hwStatus[s.id]||{})[h.slotNo];
+      const dateLine = (h.hwDate?('Verildi: '+fmtDate(h.hwDate)):'Veriliş tarihi yok') + ' &middot; ' + (h.checkDate?('Kontrol: '+fmtDate(h.checkDate)):'Kontrol tarihi yok');
+      return '<div class="hwrow '+(future?'future':'')+'">' +
+        '<div class="topic"><div class="t">'+escapeHtml(h.topic||('Ödev #'+h.slotNo))+'</div><div class="d">'+dateLine+'</div></div>' +
+        '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slotNo+'" '+(future?'disabled':'')+'><span class="knob"></span></button>' +
+      '</div>';
+    }).join('');
+    hwSection = '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div><div class="card">'+(rows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>';
+  }
+
+  let topicSection = '';
+  if(cls.hasTopicExam){
+    const fields = cls.topicExams.map(e=>{
+      const v = (cls.topicScores[s.id]||{})[e.slotNo];
+      return '<div class="field"><label>'+escapeHtml(e.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(v!=null&&v!==''?v:'-')+'</div></div>';
+    }).join('');
+    topicSection = '<div class="section-title"><span>Konu Değerlendirme Sınavları</span><span class="line"></span></div><div class="detail-grid">'+(fields||'<div class="empty">Sınav tanımlı değil.</div>')+'</div>';
+  }
+  let denemeSection = '';
+  if(cls.hasDeneme){
+    const fields = cls.denemeExams.map(e=>{
+      const v = (cls.denemeScores[s.id]||{})[e.slotNo];
+      return '<div class="field"><label>'+escapeHtml(e.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(v!=null&&v!==''?v:'-')+'</div></div>';
+    }).join('');
+    denemeSection = '<div class="section-title"><span>Deneme Sınavları</span><span class="line"></span></div><div class="detail-grid">'+(fields||'<div class="empty">Deneme tanımlı değil.</div>')+'</div>';
+  }
+
+  app.innerHTML =
+    '<button class="backlink" id="toRoster">'+ic('chevron').replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" style="transform:scaleX(-1)"')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2><div class="sub">No: '+(s.no||'-')+'</div></div>' +
+    topicSection + denemeSection + hwSection +
+    '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
+    '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.note||'')+'</textarea>' +
+    '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
+    '<div class="card" style="display:flex;gap:10px;">' +
+      '<button class="btn btn-outline" id="renameStBtn" style="flex:1;justify-content:center;">Adını Düzenle</button>' +
+      '<button class="btn btn-danger" id="deleteStBtn" style="flex:1;justify-content:center;">Öğrenciyi Sil</button>' +
+    '</div>';
+
+  document.getElementById('toRoster').onclick = backToRoster;
+  app.querySelectorAll('.toggle').forEach(btn=>{
+    if(btn.disabled) return;
+    btn.onclick = ()=>{
+      const slot = parseInt(btn.dataset.slot);
+      cls.hwStatus[s.id] = cls.hwStatus[s.id] || {};
+      cls.hwStatus[s.id][slot] = !cls.hwStatus[s.id][slot];
+      saveData(); render();
+    };
+  });
+  document.getElementById('noteBox').onblur = (e)=>{ s.note = e.target.value; saveData(); showToast('Not kaydedildi'); };
+  document.getElementById('renameStBtn').onclick = ()=>{
+    const nn = prompt('Yeni ad soyad:', s.name);
+    if(nn && nn.trim()){ s.name=nn.trim(); saveData(); render(); showToast('İsim güncellendi'); }
+  };
+  document.getElementById('deleteStBtn').onclick = ()=>{
+    if(confirm(s.name+' silinsin mi? Bu öğrenciye ait tüm veriler silinir.')){
+      cls.students = cls.students.filter(x=>x.id!==s.id);
+      delete cls.hwStatus[s.id]; delete cls.topicScores[s.id]; delete cls.denemeScores[s.id];
+      saveData(); backToRoster();
+      showToast('Öğrenci silindi');
+    }
+  };
+}
+
+// ---- Homeworks edit ----
+function renderHomeworksEdit(app, cls){
+  const rows = cls.homeworks.map(h=>
+    '<div class="listedit-row">' +
+      '<div class="slot">#'+h.slotNo+'</div>' +
+      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slotNo+'" data-f="topic">' +
+      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(h.hwDate||'')+'" data-slot="'+h.slotNo+'" data-f="hwDate"></div>' +
+      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(h.checkDate||'')+'" data-slot="'+h.slotNo+'" data-f="checkDate"></div>' +
+      '<button class="iconbtn" data-del="'+h.slotNo+'">'+ic('trash')+'</button>' +
+    '</div>'
+  ).join('');
+  app.innerHTML =
+    '<button class="backlink" id="toRoster2">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Ödevleri Düzenle</h2><div class="sub">'+escapeHtml(cls.name)+'</div></div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henüz ödev yok.</div>')+'</div>' +
+    '<button class="btn btn-soft" style="width:100%;justify-content:center;" id="addHwBtn">'+ic('plus')+'Ödev Ekle</button>' +
+    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Tamamlanma yüzdesi "Kontrol Tarihi" geldiğinde hesaba katılır.</p>';
+  document.getElementById('toRoster2').onclick = backToRoster;
+  document.getElementById('addHwBtn').onclick = ()=>{
+    const maxSlot = Math.max(0, ...cls.homeworks.map(h=>h.slotNo));
+    cls.homeworks.push({slotNo:maxSlot+1, topic:'', hwDate:null, checkDate:null});
+    saveData(); render();
+  };
+  app.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.onblur = ()=>{
+      const slot = parseInt(inp.dataset.slot);
+      const h = cls.homeworks.find(x=>x.slotNo===slot);
+      if(h){ h[inp.dataset.f] = inp.value || null; saveData(); showToast('Kaydedildi'); }
+    };
+  });
+  app.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const slot = parseInt(btn.dataset.del);
+      if(!confirm('Bu ödev silinsin mi?')) return;
+      cls.homeworks = cls.homeworks.filter(h=>h.slotNo!==slot);
+      cls.students.forEach(s=>{ if(cls.hwStatus[s.id]) delete cls.hwStatus[s.id][slot]; });
+      saveData(); render();
+    };
+  });
+}
+
+function renderHwPicker(app, cls){
+  const today = todayStr();
+  const rows = cls.homeworks.map(h=>{
+    const checked = h.checkDate && h.checkDate<=today;
+    return '<div class="card rowcard" data-pick="'+h.slotNo+'">' +
+      '<div class="name">'+escapeHtml(h.topic||('Ödev #'+h.slotNo))+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Kontrol: '+(h.checkDate?fmtDate(h.checkDate):'belirtilmemiş')+(checked?'':' (henüz gelmedi)')+'</div></div>' +
+      '<div class="chev">'+ic('chevron')+'</div>' +
+    '</div>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="toRoster3">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Ödevleri Kontrol Et</h2><div class="sub">Kontrol etmek istediğin ödevi seç</div></div>' +
+    (rows || '<div class="empty">Henüz ödev tanımlanmadı.</div>');
+  document.getElementById('toRoster3').onclick = backToRoster;
+  app.querySelectorAll('[data-pick]').forEach(el=>{
+    el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom='hw_picker'; state.view='quick_hw'; render(); };
+  });
+}
+
+function renderQuickHw(app, cls){
+  const slotNo = state.activeSlot;
+  const hw = cls.homeworks.find(h=>h.slotNo===slotNo);
+  if(!hw){ state.view='homeworks'; return render(); }
+  const rows = sortedStudents(cls).map(s=>{
+    const done = !!(cls.hwStatus[s.id]||{})[slotNo];
+    return '<div class="card" style="display:flex;align-items:center;gap:10px;">' +
+      '<div class="no" style="width:22px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">'+(s.no||'')+'</div>' +
+      '<div class="name" style="flex:1;font-size:14.5px;font-weight:700;">'+escapeHtml(s.name)+'</div>' +
+      '<button class="toggle '+(done?'on':'')+'" data-id="'+s.id+'"><span class="knob"></span></button>' +
+    '</div>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="toHwPicker">'+ic('chevron')+' Ödev listesine dön</button>' +
+    '<div class="infobar"><div class="item"><div class="v" style="font-size:15px;">'+escapeHtml(hw.topic||('Ödev #'+hw.slotNo))+'</div><div class="k">Kontrol: '+(hw.checkDate?fmtDate(hw.checkDate):'belirtilmemiş')+'</div></div></div>' +
+    '<div class="section-title"><span>Ödevi Yapanları İşaretle</span><span class="line"></span></div>' +
+    (rows || '<div class="empty">Öğrenci yok.</div>');
+  document.getElementById('toHwPicker').onclick = ()=>{ state.view = state.checkFrom || 'hw_picker'; render(); };
+  app.querySelectorAll('.toggle').forEach(btn=>{
+    btn.onclick = ()=>{
+      const sid = btn.dataset.id;
+      cls.hwStatus[sid] = cls.hwStatus[sid] || {};
+      cls.hwStatus[sid][slotNo] = !cls.hwStatus[sid][slotNo];
+      saveData(); renderQuickHw(app, cls);
+    };
+  });
+}
+
+// ---- Generic exam list edit (topic / deneme) ----
+function renderExamListEdit(app, cls, examKey, title){
+  const exams = cls[examKey];
+  const scoreKey = examKey==='topicExams' ? 'topicScores' : 'denemeScores';
+  const rows = exams.map(e=>{
+    const avg = examClassAvg(cls[scoreKey], cls.students, e.slotNo);
+    return '<div class="listedit-row">' +
+      '<div class="slot">#'+e.slotNo+'</div>' +
+      '<input type="text" value="'+escapeHtml(e.label||'')+'" data-slot="'+e.slotNo+'">' +
+      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;padding-top:9px;white-space:nowrap;">Ort: '+(avg!=null?avg:'-')+'</div>' +
+      '<button class="btn btn-soft btn-sm" data-enter="'+e.slotNo+'">Not Gir</button>' +
+      '<button class="iconbtn" data-del="'+e.slotNo+'">'+ic('trash')+'</button>' +
+    '</div>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="toRoster4">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>'+title+'</h2><div class="sub">'+escapeHtml(cls.name)+'</div></div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henüz sınav yok.</div>')+'</div>' +
+    '<button class="btn btn-soft" style="width:100%;justify-content:center;" id="addExamBtn">'+ic('plus')+'Yeni Sınav Ekle</button>';
+  document.getElementById('toRoster4').onclick = backToRoster;
+  document.getElementById('addExamBtn').onclick = ()=>{
+    const label = prompt('Yeni sınavın adı (örn. 2. '+(examKey==='topicExams'?'Konu Değerlendirme Sınavı':'Deneme Sınavı')+'):');
+    if(label && label.trim()){
+      const maxSlot = Math.max(0, ...exams.map(e=>e.slotNo));
+      exams.push({slotNo:maxSlot+1, label:label.trim()});
+      saveData(); render();
+    }
+  };
+  app.querySelectorAll('input[data-slot]').forEach(inp=>{
+    inp.onblur = ()=>{
+      const slot = parseInt(inp.dataset.slot);
+      const e = exams.find(x=>x.slotNo===slot);
+      if(e){ e.label = inp.value; saveData(); showToast('Kaydedildi'); }
+    };
+  });
+  app.querySelectorAll('[data-enter]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.activeSlot = parseInt(btn.dataset.enter);
+      state.checkFrom = examKey==='topicExams' ? 'topicExams' : 'denemeExams';
+      state.view = examKey==='topicExams' ? 'quick_topic' : 'quick_deneme';
+      render();
+    };
+  });
+  app.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const slot = parseInt(btn.dataset.del);
+      if(!confirm('Bu sınav silinsin mi? Öğrencilerin bu sınava ait notları da silinir.')) return;
+      cls[examKey] = exams.filter(e=>e.slotNo!==slot);
+      cls.students.forEach(s=>{ if(cls[scoreKey][s.id]) delete cls[scoreKey][s.id][slot]; });
+      saveData(); render();
+    };
+  });
+}
+
+function renderExamPicker(app, cls, examKey, scoreKey, nextView){
+  const exams = cls[examKey];
+  const rows = exams.map(e=>{
+    const avg = examClassAvg(cls[scoreKey], cls.students, e.slotNo);
+    return '<div class="card rowcard" data-pick="'+e.slotNo+'">' +
+      '<div class="name">'+escapeHtml(e.label)+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Sınıf ortalaması: '+(avg!=null?avg:'henüz not yok')+'</div></div>' +
+      '<div class="chev">'+ic('chevron')+'</div>' +
+    '</div>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="toRoster5">'+ic('chevron')+' '+escapeHtml(cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Not Girmek İçin Sınav Seç</h2></div>' +
+    (rows || '<div class="empty">Henüz sınav tanımlanmadı.</div>');
+  document.getElementById('toRoster5').onclick = backToRoster;
+  app.querySelectorAll('[data-pick]').forEach(el=>{
+    el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom = (nextView==='quick_topic'?'topic_picker':'deneme_picker'); state.view=nextView; render(); };
+  });
+}
+
+function renderQuickScore(app, cls, examKey, scoreKey, title, backView){
+  const slotNo = state.activeSlot;
+  const exam = cls[examKey].find(e=>e.slotNo===slotNo);
+  if(!exam){ state.view = examKey==='topicExams'?'topicExams':'denemeExams'; return render(); }
+  const rows = sortedStudents(cls).map(s=>{
+    const val = (cls[scoreKey][s.id]||{})[slotNo];
+    return '<div class="scorerow">' +
+      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="name">'+escapeHtml(s.name)+'</div>' +
+      '<input type="text" inputmode="decimal" placeholder="-" value="'+(val!=null?escapeHtml(String(val)):'')+'" data-id="'+s.id+'">' +
+    '</div>';
+  }).join('');
+  const avg = examClassAvg(cls[scoreKey], cls.students, slotNo);
+  app.innerHTML =
+    '<button class="backlink" id="toPicker">'+ic('chevron')+' Sınav listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(exam.label)+'</h2><div class="sub">'+title+'</div></div>' +
+    '<div class="card scoregrid">'+(rows || '<div class="empty">Öğrenci yok.</div>')+'</div>' +
+    '<div class="infobar" style="margin-top:14px;"><div class="item"><div class="v" id="avgVal">'+(avg!=null?avg:'-')+'</div><div class="k">Sınıf Ortalaması</div></div></div>';
+  document.getElementById('toPicker').onclick = ()=>{ state.view = backView; render(); };
+  app.querySelectorAll('input[data-id]').forEach(inp=>{
+    inp.onblur = ()=>{
+      const sid = inp.dataset.id;
+      const v = inp.value.trim();
+      cls[scoreKey][sid] = cls[scoreKey][sid] || {};
+      cls[scoreKey][sid][slotNo] = v==='' ? null : v;
+      saveData();
+      const a = examClassAvg(cls[scoreKey], cls.students, slotNo);
+      document.getElementById('avgVal').textContent = a!=null?a:'-';
+      showToast('Kaydedildi');
+    };
+  });
+}
+
+// ============== INIT ==============
+render();
+</script>
+</body>
+</html>
