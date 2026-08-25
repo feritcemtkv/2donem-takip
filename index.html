@@ -66,13 +66,6 @@
   .btn:disabled{opacity:.5;cursor:default;}
   .btn.full{width:100%;justify-content:center;}
 
-  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:26px;}
-  .statcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:19px;display:flex;align-items:center;gap:15px;box-shadow:var(--shadow);}
-  .statcard .icowrap{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
-  .statcard .icowrap .ic{width:24px;height:24px;stroke:#fff;}
-  .statcard .num{font-size:25px;font-weight:800;color:var(--ink);}
-  .statcard .lbl{font-size:12px;color:var(--ink-soft);font-weight:700;margin-top:1px;}
-
   .section-title{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:800;margin:26px 0 12px;display:flex;align-items:center;gap:10px;}
   .section-title .line{flex:1;height:1px;background:var(--line);}
   .section-title:first-child{margin-top:0;}
@@ -80,7 +73,6 @@
   .classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
   .classcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;cursor:pointer;box-shadow:var(--shadow);border-top:4px solid var(--primary);}
   .classcard h3{font-size:19px;margin-bottom:4px;}
-  .classcard .meta{font-size:12px;color:var(--ink-soft);margin-bottom:14px;font-weight:600;}
   .classcard .tags{display:flex;gap:6px;flex-wrap:wrap;}
   .tag{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap;}
   .tag.blue{background:var(--primary-soft);color:var(--primary-deep);}
@@ -199,7 +191,7 @@
 <header class="top">
   <div class="brand">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.2 · bulut</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.3 · bulut</span></h1>
   </div>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
@@ -221,7 +213,6 @@ const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
-// ============== ICONS ==============
 const ICONS = {
   home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
   school:'<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
@@ -238,16 +229,16 @@ const ICONS = {
 };
 function ic(name){ return '<svg class="ic" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
 
-// ============== STATE ==============
 let state = {
   userId: null, username: null, userEmail: null,
-  page: 'login', // login | home | sinif_detail
+  page: 'login',
   classes: [], classId: null, cls: null,
   view: 'roster',
   studentId: null,
   activeSlot: null, checkFrom: null,
   sortBy: 'no',
   rubricLevel: null, rubricEdit: false,
+  examType: null, activeExamId: null,
   loading: false,
 };
 
@@ -270,13 +261,10 @@ function showToast(msg){
   clearTimeout(showToast._t);
   showToast._t = setTimeout(()=>t.classList.remove('show'), 1700);
 }
-
-// ============== SINIF SEVIYESINE GORE ETIKET (12. sinif = Deneme, digerleri = KDS) ==============
 function isGrade12(name){ name = name || (state.cls?state.cls.name:''); return /12/.test(name); }
 function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS'; }
 function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : "KDS'leri"; }
 
-// ============== AUTH ==============
 function toEmail(username){
   username = username.trim();
   if(username.includes('@')) return username;
@@ -348,7 +336,6 @@ async function logActivity(description){
   catch(e){ console.error('logActivity error', e); }
 }
 
-// ============== MODAL SYSTEM ==============
 function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 function openModalHtml(innerHtml){
   document.getElementById('modalRoot').innerHTML = '<div class="modalbg" id="modalBg"><div class="modalbox">'+innerHtml+'</div></div>';
@@ -364,7 +351,6 @@ function openNewClassModal(){
   document.getElementById('mSave').onclick = ()=> addClass(document.getElementById('mClassName').value);
 }
 
-// ============== CLASSES (SUPABASE) ==============
 async function loadClasses(){
   const { data } = await sb.from('classes').select('*').order('sort_order');
   state.classes = data || [];
@@ -411,12 +397,17 @@ async function loadClassDetail(classId){
   const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id',classId).order('slot_no');
   const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
   const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
+  const { data: denemeExams } = await sb.from('deneme_exams').select('*').eq('class_id',classId).order('slot_no');
   const ids = (students||[]).map(s=>s.id);
-  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[];
+  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[], denemeScoreRows=[];
   if(ids.length){
     const r1 = await sb.from('homework_status').select('*').in('student_id', ids); hwStatusRows = r1.data||[];
     const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids); rubricScoreRows = r2.data||[];
     const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids); quizScoreRows = r3.data||[];
+  }
+  const examIds = (denemeExams||[]).map(e=>e.id);
+  if(examIds.length){
+    const r4 = await sb.from('deneme_scores').select('*').in('exam_id', examIds); denemeScoreRows = r4.data||[];
   }
   const { data: rubricRows } = await sb.from('rubrics').select('*').eq('class_id', classId);
   const hwStatus = {};
@@ -430,18 +421,26 @@ async function loadClassDetail(classId){
     quizScores[row.student_id]=quizScores[row.student_id]||{};
     quizScores[row.student_id][row.slot_no]={ dogru: row.dogru, yanlis: row.yanlis, bos: row.bos, score: row.score };
   }
+  const denemeScoresByExam = {};
+  for(const row of denemeScoreRows){
+    denemeScoresByExam[row.exam_id] = denemeScoresByExam[row.exam_id]||{};
+    denemeScoresByExam[row.exam_id][row.student_id] = denemeScoresByExam[row.exam_id][row.student_id]||{};
+    denemeScoresByExam[row.exam_id][row.student_id][row.subject] = { dogru: row.dogru, yanlis: row.yanlis, bos: row.bos };
+  }
   state.cls = {
     id: classId, name: classObj?classObj.name:'',
     students: students||[], homeworks: homeworks||[], hwStatus,
     quizzes: quizzes||[], quizScores,
     perfTasks: perfTasks||[], rubrics, rubricScores,
+    tytExams: (denemeExams||[]).filter(e=>e.exam_type==='tyt'),
+    aytExams: (denemeExams||[]).filter(e=>e.exam_type==='ayt'),
+    denemeScoresByExam,
   };
   state.rubricLevel = (state.cls.perfTasks[0] && state.cls.perfTasks[0].label) || null;
   state.loading = false;
   render();
 }
 
-// ============== CALC HELPERS ==============
 function assignedCount(){ const today=todayStr(); return state.cls.homeworks.filter(h=>h.check_date && h.check_date<=today).length; }
 function completedCount(sid){ const today=todayStr(); const st=state.cls.hwStatus[sid]||{}; let n=0; state.cls.homeworks.forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) n++; }); return n; }
 function hwPct(sid){ const a=assignedCount(); if(a===0) return 0; return Math.round((completedCount(sid)/a)*100); }
@@ -464,12 +463,6 @@ function perfClassAvg(){
   if(!vals.length) return null;
   return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
 }
-function quizClassAvgOverall(){
-  const vals=[];
-  state.cls.students.forEach(s=>{ state.cls.quizzes.forEach(q=>{ const v=(state.cls.quizScores[s.id]||{})[q.slot_no]; if(v && v.dogru!=null) vals.push(v.dogru); }); });
-  if(!vals.length) return null;
-  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
-}
 function quizSlotAvgDYB(slotNo){
   const entries = state.cls.students.map(s=>(state.cls.quizScores[s.id]||{})[slotNo]).filter(v=>v && (v.dogru!=null||v.yanlis!=null||v.bos!=null));
   if(!entries.length) return null;
@@ -481,7 +474,6 @@ function quizSlotAvgDYB(slotNo){
   return { dogru: avg('dogru'), yanlis: avg('yanlis'), bos: avg('bos') };
 }
 
-// ============== STUDENTS ==============
 async function toggleAbsent(sid){
   const s = studentById(sid); if(!s) return;
   s.absent = !s.absent; render();
@@ -566,7 +558,6 @@ async function importStudentsFromExcel(file){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 
-// ============== HOMEWORKS ==============
 async function toggleHw(sid, slotNo){
   const cur = !!(state.cls.hwStatus[sid]||{})[slotNo];
   const next = !cur;
@@ -606,7 +597,6 @@ async function deleteHomework(slotNo){
   showToast('Ödev silindi');
 }
 
-// ============== QUIZ / KDS / DENEME ==============
 async function addQuiz(){
   const exWord = examWord();
   const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
@@ -644,9 +634,8 @@ async function updateQuizDYB(sid, slotNo, field, value){
   state.cls.quizScores[sid][slotNo] = state.cls.quizScores[sid][slotNo] || {};
   const numVal = value===''? null : (parseInt(value)||0);
   state.cls.quizScores[sid][slotNo][field] = numVal;
-  const payload = {student_id:sid, slot_no:slotNo};
-  payload[field] = numVal;
-  await sb.from('quiz_scores').upsert(payload);
+  const rec = state.cls.quizScores[sid][slotNo];
+  await sb.from('quiz_scores').upsert({student_id:sid, slot_no:slotNo, dogru:rec.dogru, yanlis:rec.yanlis, bos:rec.bos});
   const s = studentById(sid);
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
   const fieldLabel = field==='dogru'?'doğru':(field==='yanlis'?'yanlış':'boş');
@@ -695,7 +684,6 @@ async function importQuizScoresFromExcel(file, slotNo){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 
-// ============== PERFORMANS (RUBRIK) ==============
 async function addPerfTask(label){
   const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
   const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
@@ -787,6 +775,90 @@ async function setRubricScore(sid, level, critIndex, score){
   showToast('Puan kaydedildi');
 }
 
+// ============== TYT / AYT DENEMELERI (12. sinif) ==============
+async function importDenemeFromExcel(file, examType){
+  if(!file) return;
+  const label = prompt('Yeni '+(examType==='tyt'?'TYT':'AYT')+' denemesinin adı:');
+  if(!label || !label.trim()) return;
+  showToast('Dosya okunuyor...');
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(rows.length < 2){ showToast('Dosya boş veya eksik görünüyor'); return; }
+    const header = rows[0];
+    const subjects = [];
+    for(let c=1; c+2<header.length; c+=3){
+      let name = String(header[c]||'').trim();
+      name = name.replace(/\s*(D|Doğru|Y|Yanlış|B|Boş)\s*$/i,'').trim();
+      if(!name) name = 'Ders '+(subjects.length+1);
+      subjects.push(name);
+    }
+    if(!subjects.length){ showToast('Ders sütunları bulunamadı'); return; }
+    const list = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
+    const maxSlot = Math.max(0, ...list.map(e=>e.slot_no||0));
+    const { data: examData, error: examErr } = await sb.from('deneme_exams').insert({
+      class_id: state.cls.id, exam_type: examType, slot_no: maxSlot+1, label: label.trim(), subjects
+    }).select();
+    if(examErr){ showToast('Hata: '+examErr.message); return; }
+    const exam = examData[0];
+    const byNo = {};
+    state.cls.students.forEach(s=>{ if(s.no) byNo[String(s.no).trim()] = s; });
+    const scoreRows = [];
+    let matched=0, unmatched=0;
+    for(let r=1; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>String(c).trim()==='')) continue;
+      const no = String(row[0]??'').trim();
+      if(!no) continue;
+      const student = byNo[no];
+      if(!student){ unmatched++; continue; }
+      matched++;
+      subjects.forEach((subj, i)=>{
+        const base = 1 + i*3;
+        const d = parseInt(row[base]); const y = parseInt(row[base+1]); const b = parseInt(row[base+2]);
+        scoreRows.push({ student_id: student.id, exam_id: exam.id, subject: subj, dogru: isNaN(d)?null:d, yanlis: isNaN(y)?null:y, bos: isNaN(b)?null:b });
+      });
+    }
+    if(scoreRows.length){
+      const { error: scoreErr } = await sb.from('deneme_scores').upsert(scoreRows, {onConflict:'student_id,exam_id,subject'});
+      if(scoreErr){ showToast('Notlar kaydedilirken hata: '+scoreErr.message); }
+    }
+    if(examType==='tyt') state.cls.tytExams.push(exam); else state.cls.aytExams.push(exam);
+    state.cls.denemeScoresByExam[exam.id] = state.cls.denemeScoresByExam[exam.id] || {};
+    scoreRows.forEach(sr=>{
+      state.cls.denemeScoresByExam[exam.id][sr.student_id] = state.cls.denemeScoresByExam[exam.id][sr.student_id] || {};
+      state.cls.denemeScoresByExam[exam.id][sr.student_id][sr.subject] = { dogru: sr.dogru, yanlis: sr.yanlis, bos: sr.bos };
+    });
+    render();
+    logActivity('"'+label.trim()+'" '+(examType==='tyt'?'TYT':'AYT')+' denemesini Excelden ekledi ('+matched+' öğrenci, '+subjects.length+' ders)');
+    showToast(matched+' öğrenci, '+subjects.length+' ders yüklendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
+  }catch(err){ showToast('Dosya okunamadı: '+err.message); }
+}
+async function deleteDenemeExam(examId, examType){
+  const list = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
+  const exam = list.find(e=>e.id===examId);
+  const label = exam?exam.label:'';
+  if(examType==='tyt') state.cls.tytExams = state.cls.tytExams.filter(e=>e.id!==examId);
+  else state.cls.aytExams = state.cls.aytExams.filter(e=>e.id!==examId);
+  delete state.cls.denemeScoresByExam[examId];
+  render();
+  await sb.from('deneme_exams').delete().eq('id', examId);
+  logActivity('"'+label+'" denemesini sildi');
+  showToast('Deneme silindi');
+}
+async function updateDenemeScore(sid, examId, subject, field, value){
+  state.cls.denemeScoresByExam[examId] = state.cls.denemeScoresByExam[examId]||{};
+  state.cls.denemeScoresByExam[examId][sid] = state.cls.denemeScoresByExam[examId][sid]||{};
+  state.cls.denemeScoresByExam[examId][sid][subject] = state.cls.denemeScoresByExam[examId][sid][subject]||{};
+  const numVal = value===''?null:(parseInt(value)||0);
+  state.cls.denemeScoresByExam[examId][sid][subject][field] = numVal;
+  const rec = state.cls.denemeScoresByExam[examId][sid][subject];
+  await sb.from('deneme_scores').upsert({student_id:sid, exam_id:examId, subject, dogru:rec.dogru, yanlis:rec.yanlis, bos:rec.bos}, {onConflict:'student_id,exam_id,subject'});
+  showToast('Kaydedildi');
+}
+
 // ============== RENDER DISPATCH ==============
 function render(){
   const app = document.getElementById('app');
@@ -795,7 +867,6 @@ function render(){
   if(state.page==='home') return renderHome(app);
   if(state.page==='sinif_detail') return renderSinifDetail(app);
 }
-
 function renderHome(app){
   app.innerHTML =
     '<div class="pagehead"><h2>Hoş geldin, '+escapeHtml(state.username||'')+'</h2></div>' +
@@ -806,9 +877,12 @@ function renderHome(app){
 function classGridHtml(){
   let html = '<div class="classgrid">';
   state.classes.forEach(c=>{
+    const g12 = isGrade12(c.name);
     html += '<div class="classcard" data-openclass="'+c.id+'">' +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
-      '<div class="tags"><span class="tag blue">Ödev Takibi</span><span class="tag teal">Performans</span><span class="tag amber">'+examWord(c.name)+'</span></div>' +
+      '<div class="tags"><span class="tag blue">Ödev Takibi</span>' +
+      (g12 ? '<span class="tag amber">TYT</span><span class="tag amber">AYT</span>' : '<span class="tag teal">Performans</span><span class="tag amber">KDS</span>') +
+      '</div>' +
     '</div>';
   });
   html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button></div>';
@@ -834,14 +908,16 @@ function renderSinifDetail(app){
   if(state.view==='quizzes') return renderQuizzesEdit(app);
   if(state.view==='quiz_picker') return renderQuizPicker(app);
   if(state.view==='quick_quiz') return renderQuickQuiz(app);
+  if(state.view==='deneme_list') return renderDenemeList(app, state.examType);
+  if(state.view==='deneme_scores') return renderDenemeScores(app);
 }
 function backToRoster(){ state.view='roster'; state.studentId=null; render(); }
 function backToHome(){ state.page='home'; state.cls=null; render(); }
 
 function renderRoster(app){
   const cls = state.cls;
-  const hwAvg = hwClassAvg(), perfAvg = perfClassAvg(), quizAvg = quizClassAvgOverall();
-  const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
+  const g12 = isGrade12(cls.name);
+  const hwAvg = hwClassAvg();
   const sorted = sortedStudents();
   const list = sorted.map(s=>{
     const p = hwPct(s.id);
@@ -854,20 +930,35 @@ function renderRoster(app){
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>';
   }).join('');
+
+  let midSections = '';
+  if(g12){
+    midSections =
+      '<div class="section-title"><span>TYT</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-primary full" id="tytBtn">'+ic('clipboard')+'TYT Denemeleri</button></div>' +
+      '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
+  } else {
+    const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
+    midSections =
+      '<div class="section-title"><span>'+exWordPl+'</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-soft" id="quizEditBtn">'+ic('file')+exWordPl+' Düzenle</button><button class="btn btn-primary" id="quizEnterBtn">'+ic('clipboard')+exWord+' Notu Gir</button></div>' +
+      '<div class="section-title"><span>Performans</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-soft" id="perfEditBtn">'+ic('book')+'Performans Ödevlerini Düzenle</button><button class="btn btn-primary" id="perfEnterBtn">'+ic('target')+'Performans Notu Gir</button></div>';
+  }
+
   app.innerHTML =
     '<button class="backlink" id="toHome">'+ic('chevron')+' Sınıflarım listesine dön</button>' +
     '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
       '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
-      '<div class="item"><div class="v">'+(perfAvg!=null?perfAvg:'-')+'</div><div class="k">Performans Ort.</div></div>' +
-      '<div class="item"><div class="v">'+(quizAvg!=null?quizAvg:'-')+'</div><div class="k">'+exWord+' Ort. Doğru</div></div>' +
+      (g12 ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') :
+        ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>')) +
     '</div>' +
     '<div class="section-title"><span>Ödev Takibi</span><span class="line"></span></div>' +
     '<div class="actionrow"><button class="btn btn-soft" id="hwEditBtn">'+ic('flag')+'Ödevleri Düzenle</button><button class="btn btn-primary" id="hwCheckBtn">'+ic('clipboard')+'Ödevleri Kontrol Et</button></div>' +
-    '<div class="actionrow"><button class="btn btn-soft" id="quizEditBtn">'+ic('file')+exWordPl+' Düzenle</button><button class="btn btn-primary" id="quizEnterBtn">'+ic('clipboard')+exWord+' Notu Gir</button></div>' +
-    '<div class="section-title"><span>Performans</span><span class="line"></span></div>' +
-    '<div class="actionrow"><button class="btn btn-soft" id="perfEditBtn">'+ic('book')+'Performans Ödevlerini Düzenle</button><button class="btn btn-primary" id="perfEnterBtn">'+ic('target')+'Performans Notu Gir</button></div>' +
+    midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
     '</div>' +
@@ -884,14 +975,19 @@ function renderRoster(app){
   document.getElementById('toHome').onclick = backToHome;
   document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
   document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
-  document.getElementById('perfEditBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
-  document.getElementById('perfEnterBtn').onclick = ()=>{
-    if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
-    if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
-    state.view='rubric'; render();
-  };
-  document.getElementById('quizEditBtn').onclick = ()=>{ state.view='quizzes'; render(); };
-  document.getElementById('quizEnterBtn').onclick = ()=>{ state.view='quiz_picker'; render(); };
+  if(g12){
+    document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
+    document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
+  } else {
+    document.getElementById('quizEditBtn').onclick = ()=>{ state.view='quizzes'; render(); };
+    document.getElementById('quizEnterBtn').onclick = ()=>{ state.view='quiz_picker'; render(); };
+    document.getElementById('perfEditBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
+    document.getElementById('perfEnterBtn').onclick = ()=>{
+      if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
+      if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+      state.view='rubric'; render();
+    };
+  }
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
   app.querySelectorAll('[data-student]').forEach(el=>{
@@ -916,28 +1012,38 @@ function renderStudentDetail(app){
   const s = studentById(state.studentId);
   if(!s){ return backToRoster(); }
   const cls = state.cls;
+  const g12 = isGrade12(cls.name);
   const today = todayStr();
-  const exWord = examWord(cls.name);
-
-  let quizSum=0, quizCount=0;
-  cls.quizzes.forEach(q=>{ const v=(cls.quizScores[s.id]||{})[q.slot_no]; if(v && v.dogru!=null){ quizSum+=v.dogru; quizCount++; } });
-  const quizAvg = quizCount>0 ? Math.round(quizSum/quizCount) : '-';
-
-  let perfSum=0, perfCount=0;
-  cls.perfTasks.forEach(t=>{ const g=rubricTotal(s.id,t.label).grade; if(g!=null){ perfSum+=g; perfCount++; } });
-  const perfAvg = perfCount>0 ? Math.round(perfSum/perfCount) : '-';
 
   const hwP = hwPct(s.id);
+  let perfSum=0, perfCount=0;
+  if(!g12){ cls.perfTasks.forEach(t=>{ const g=rubricTotal(s.id,t.label).grade; if(g!=null){ perfSum+=g; perfCount++; } }); }
+  const perfAvg = perfCount>0 ? Math.round(perfSum/perfCount) : '-';
 
-  const quizHtml = cls.quizzes.map(q=>{
-    const v = (cls.quizScores[s.id]||{})[q.slot_no];
-    const disp = v ? ('D:'+(v.dogru??'-')+' Y:'+(v.yanlis??'-')+' B:'+(v.bos??'-')) : '-';
-    return '<div class="field"><label>'+escapeHtml(q.label)+'</label><div class="num" style="font-size:12.5px;font-weight:800;color:var(--primary-deep);">'+disp+'</div></div>';
-  }).join('');
-  const perfHtml = cls.perfTasks.map(t=>{
-    const total = rubricTotal(s.id, t.label);
-    return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
-  }).join('');
+  let quizHtml = '', perfHtml = '', tytHtml = '', aytHtml = '';
+  if(!g12){
+    quizHtml = cls.quizzes.map(q=>{
+      const v = (cls.quizScores[s.id]||{})[q.slot_no];
+      const disp = v ? ('D:'+(v.dogru??'-')+' Y:'+(v.yanlis??'-')+' B:'+(v.bos??'-')) : '-';
+      return '<div class="field"><label>'+escapeHtml(q.label)+'</label><div class="num" style="font-size:12.5px;font-weight:800;color:var(--primary-deep);">'+disp+'</div></div>';
+    }).join('');
+    perfHtml = cls.perfTasks.map(t=>{
+      const total = rubricTotal(s.id, t.label);
+      return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
+    }).join('');
+  } else {
+    const buildExamCards = (exams)=> exams.map(ex=>{
+      const scores = (cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
+      const subjRows = (ex.subjects||[]).map(subj=>{
+        const v = scores[subj]||{};
+        return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink-soft);">'+escapeHtml(subj)+'</span><span style="font-weight:700;">D:'+(v.dogru??'-')+' Y:'+(v.yanlis??'-')+' B:'+(v.bos??'-')+'</span></div>';
+      }).join('');
+      return '<div class="card" style="padding:12px 14px;"><div style="font-weight:700;font-size:13.5px;margin-bottom:6px;">'+escapeHtml(ex.label)+'</div>'+(subjRows||'<div class="empty" style="padding:8px;">Not girilmemiş</div>')+'</div>';
+    }).join('');
+    tytHtml = buildExamCards(cls.tytExams);
+    aytHtml = buildExamCards(cls.aytExams);
+  }
+
   const hwRows = cls.homeworks.map(h=>{
     const future = !h.check_date || h.check_date>today;
     const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
@@ -956,12 +1062,13 @@ function renderStudentDetail(app){
     '</div>' +
     '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
     '<div class="infobar">' +
-      '<div class="item"><div class="v">'+quizAvg+'</div><div class="k">'+exWord+' Ort. Doğru</div></div>' +
-      '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' +
+      (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
       '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' +
     '</div>' +
-    (cls.quizzes.length ? '<div class="section-title"><span>'+exWord+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
-    (cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
+    (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+examWord(cls.name)+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
+    (g12 ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
+    (g12 ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
     '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
     '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
@@ -992,7 +1099,6 @@ function renderStudentDetail(app){
   };
 }
 
-// ---- Homeworks ----
 function renderHomeworksEdit(app){
   const rows = state.cls.homeworks.map(h=>
     '<div class="listedit-row">' +
@@ -1059,7 +1165,6 @@ function renderQuickHw(app){
   });
 }
 
-// ---- Performans (rubrik) ----
 function renderPerfTasksList(app){
   const rows = state.cls.perfTasks.map(t=>{
     const avg = perfTaskAvg(t.label);
@@ -1202,7 +1307,6 @@ function renderRubric(app){
   }
 }
 
-// ---- Quiz / KDS / Deneme ----
 function renderQuizzesEdit(app){
   const exWord = examWord(), exWordPl = examWordPlural();
   const rows = state.cls.quizzes.map(q=>
@@ -1283,7 +1387,68 @@ function renderQuickQuiz(app){
   });
 }
 
-// ============== INIT ==============
+// ---- TYT / AYT ----
+function renderDenemeList(app, examType){
+  const label = examType==='tyt'?'TYT':'AYT';
+  const exams = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
+  const rows = exams.map(e=>{
+    return '<div class="listedit-row">' +
+      '<div style="flex:2;">' +
+        '<div style="font-weight:700;font-size:14px;">'+escapeHtml(e.label)+'</div>' +
+        '<div style="font-size:11.5px;color:var(--ink-soft);">'+ (e.subjects||[]).map(s=>escapeHtml(s)).join(', ') +'</div>' +
+      '</div>' +
+      '<button class="btn btn-soft btn-sm" data-enter="'+e.id+'">Notları Gör</button>' +
+      '<button class="iconbtn" data-del="'+e.id+'">'+ic('trash')+'</button>' +
+    '</div>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="backDL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>'+label+' Denemeleri</h2></div>' +
+    '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
+    '<button class="btn btn-soft full" id="addDenemeBtn">'+ic('upload')+'Excelden '+label+' Denemesi Ekle</button>' +
+    '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Excel formatı: 1. sütun Öğrenci No, sonrasında her ders için 3 sütun (Doğru, Yanlış, Boş) yan yana. Başlık satırında ders adını yaz (örn. "Türkçe D", "Türkçe Y", "Türkçe B").</p>';
+  document.getElementById('backDL').onclick = backToRoster;
+  document.getElementById('addDenemeBtn').onclick = ()=> document.getElementById('denemeExcelFile').click();
+  document.getElementById('denemeExcelFile').onchange = (e)=> importDenemeFromExcel(e.target.files[0], examType);
+  app.querySelectorAll('[data-enter]').forEach(btn=>{
+    btn.onclick = ()=>{ state.activeExamId = btn.dataset.enter; state.view='deneme_scores'; render(); };
+  });
+  app.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{ if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')) deleteDenemeExam(btn.dataset.del, examType); };
+  });
+}
+function renderDenemeScores(app){
+  const examId = state.activeExamId;
+  const examType = state.examType;
+  const exam = (examType==='tyt'?state.cls.tytExams:state.cls.aytExams).find(e=>e.id===examId);
+  if(!exam){ state.view='deneme_list'; return render(); }
+  const subjects = exam.subjects||[];
+  const scores = state.cls.denemeScoresByExam[examId]||{};
+  const headerCells = subjects.map(s=>'<th colspan="3" style="text-align:center;font-size:11px;padding:6px 4px;border-bottom:1px solid var(--line);">'+escapeHtml(s)+'</th>').join('');
+  const subHeaderCells = subjects.map(()=> '<th style="font-size:9.5px;color:var(--ink-soft);padding:2px;">D</th><th style="font-size:9.5px;color:var(--ink-soft);padding:2px;">Y</th><th style="font-size:9.5px;color:var(--ink-soft);padding:2px;">B</th>').join('');
+  const rows = sortedStudents().map(s=>{
+    const rec = scores[s.id]||{};
+    const cells = subjects.map(subj=>{
+      const v = rec[subj]||{};
+      return '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="dogru" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>' +
+        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="yanlis" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>' +
+        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="bos" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>';
+    }).join('');
+    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);">'+(s.no||'')+'</td><td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>'+cells+'</tr>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="backDS">'+ic('chevron')+' '+(examType==='tyt'?'TYT':'AYT')+' listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(exam.label)+'</h2></div>' +
+    '<div class="card" style="overflow-x:auto;">' +
+      '<table style="border-collapse:collapse;width:100%;"><thead><tr><th></th><th></th>'+headerCells+'</tr><tr><th></th><th></th>'+subHeaderCells+'</tr></thead><tbody>'+(rows||'')+'</tbody></table>' +
+    '</div>';
+  document.getElementById('backDS').onclick = ()=>{ state.view='deneme_list'; render(); };
+  app.querySelectorAll('input[data-id]').forEach(inp=>{
+    inp.onblur = ()=> updateDenemeScore(inp.dataset.id, examId, inp.dataset.subj, inp.dataset.f, inp.value);
+  });
+}
+
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){ await startApp(); } else { state.page='login'; render(); }
