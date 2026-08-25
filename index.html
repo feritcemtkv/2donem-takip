@@ -683,7 +683,56 @@ async function importQuizScoresFromExcel(file, slotNo){
     showToast(matched+' öğrenci güncellendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
+async function addQuizFromExcel(file){
+  if(!file) return;
+  const exWord = examWord();
+  const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
+  if(!label || !label.trim()) return;
+  showToast('Dosya okunuyor...');
+  try{
+    const maxSlot = Math.max(0, ...state.cls.quizzes.map(q=>q.slot_no||0));
+    const nextSlot = maxSlot+1;
+    const { data: qData, error: qErr } = await sb.from('quizzes').insert({class_id:state.cls.id, slot_no:nextSlot, label:label.trim()}).select();
+    if(qErr){ showToast('Hata: '+qErr.message); return; }
+    state.cls.quizzes.push(qData[0]);
 
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(!rows.length){ showToast(exWord+' oluşturuldu ama dosya boş görünüyor'); render(); return; }
+    let startRow = 0;
+    const header = rows[0].map(c=>String(c).toLocaleLowerCase('tr'));
+    const looksLikeHeader = header.some(h=>h.includes('no')||h.includes('doğru')||h.includes('dogru'));
+    if(looksLikeHeader) startRow = 1;
+    const byNo = {};
+    state.cls.students.forEach(s=>{ if(s.no) byNo[String(s.no).trim()] = s; });
+    let matched = 0, unmatched = 0;
+    const upserts = [];
+    for(let r=startRow; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>String(c).trim()==='')) continue;
+      const no = String(row[0]??'').trim();
+      if(!no) continue;
+      const dogru = parseInt(row[1]); const yanlis = parseInt(row[2]); const bos = parseInt(row[3]);
+      const student = byNo[no];
+      if(!student){ unmatched++; continue; }
+      matched++;
+      upserts.push({student_id: student.id, slot_no: nextSlot, dogru: isNaN(dogru)?null:dogru, yanlis: isNaN(yanlis)?null:yanlis, bos: isNaN(bos)?null:bos});
+    }
+    if(upserts.length){
+      const { error } = await sb.from('quiz_scores').upsert(upserts);
+      if(error){ showToast(exWord+' oluşturuldu ama notlar kaydedilirken hata: '+error.message); render(); return; }
+      upserts.forEach(u=>{
+        state.cls.quizScores[u.student_id] = state.cls.quizScores[u.student_id] || {};
+        state.cls.quizScores[u.student_id][nextSlot] = { dogru:u.dogru, yanlis:u.yanlis, bos:u.bos };
+      });
+    }
+    render();
+    logActivity('"'+label.trim()+'" '+exWord+' eklendi, Excelden '+matched+' öğrenci sonucu yüklendi'+(unmatched?(' ('+unmatched+' satır eşleşmedi)'):''));
+    showToast(exWord+' eklendi, '+matched+' öğrenci güncellendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
+  }catch(err){ showToast('Dosya okunamadı: '+err.message); }
+}
 async function addPerfTask(label){
   const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
   const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
