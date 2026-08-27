@@ -206,12 +206,14 @@
 <div id="modalRoot"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+if(window.pdfjsLib){ window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
 
 const ICONS = {
   home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
@@ -910,6 +912,156 @@ async function setRubricScore(sid, level, critIndex, score){
   showToast('Puan kaydedildi');
 }
 
+async function extractPdfRows(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  const allRows = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items.map(it=>({ text:(it.str||''), x:it.transform[4], y:it.transform[5] })).filter(it=>it.text.trim()!=='');
+    items.sort((a,b)=> (b.y-a.y) || (a.x-b.x));
+    let cur=[], curY=null;
+    const TOL=2.5;
+    for(const it of items){
+      if(curY===null || Math.abs(it.y-curY)<=TOL){ cur.push(it); if(curY===null) curY=it.y; }
+      else { cur.sort((a,b)=>a.x-b.x); allRows.push(cur.map(c=>c.text).join(' ')); cur=[it]; curY=it.y; }
+    }
+    if(cur.length){ cur.sort((a,b)=>a.x-b.x); allRows.push(cur.map(c=>c.text).join(' ')); }
+  }
+  return allRows;
+}
+function detectDenemeSubjects(rows){
+  let dynIdx=-1, dynCount=0;
+  for(let i=0;i<rows.length;i++){
+    const toks = rows[i].trim().split(/\s+/);
+    const c = toks.filter(t=>t==='D.').length;
+    if(c>=3){ dynIdx=i; dynCount=c; break; }
+  }
+  if(dynIdx<0) return null;
+  let subjNames=null;
+  for(let j=dynIdx-1; j>=0 && j>=dynIdx-5; j--){
+    const toks = rows[j].trim().split(/\s+/);
+    if(toks.some(t=>t.toLocaleUpperCase('tr').indexOf('TÜRKÇE')>=0)){
+      const excl = new Set(['SAY','EA','SÖZ','DİL','ŞB','KRM','İLÇE','İL','GENEL','SIRA','TYT']);
+      subjNames = toks.filter(t=>!excl.has(t.toLocaleUpperCase('tr')));
+      break;
+    }
+  }
+  if(!subjNames || subjNames.length!==dynCount){
+    subjNames = Array.from({length:dynCount}, (_,i)=>'Ders '+(i+1));
+  }
+  return {subjectCount:dynCount, subjNames};
+}
+function detectSoruSayisi(rows, subjNames){
+  const allText = rows.join(' ');
+  const matches = [...allText.matchAll(/Soru\s*Sayısı\s*\((\d+)/gi)].map(m=>parseInt(m[1]));
+  const totals = {};
+  if(matches.length === subjNames.length){ subjNames.forEach((n,i)=> totals[n]=matches[i]); }
+  return totals;
+}
+function detectExamLabel(rows){
+  let title = null;
+  for(const r of rows){ if(/DENEME[-\s]?\d+/i.test(r)){ title = r.trim(); break; } }
+  let date = null;
+  for(const r of rows){
+    if(/Tarihi/i.test(r)){ const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/); if(m){ date = m[1]; break; } }
+  }
+  if(!date){ for(const r of rows){ const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/); if(m){ date=m[1]; break; } } }
+  if(!title) title = 'Deneme Sonuçları';
+  return date ? (title+' ('+date+')') : title;
+}
+function parseDenemeDataRows(rows, subjectCount){
+  const NUM_RE = /^-?\d+([.,]\d+)?$/;
+  const out = [];
+  for(const rowStr of rows){
+    const texts = rowStr.trim().split(/\s+/).filter(Boolean);
+    if(!texts.length || !/^\d+$/.test(texts[0])) continue;
+    let idx=1;
+    if(idx<texts.length && /^[A-ZÇĞİÖŞÜ]{1,3}$/.test(texts[idx])) idx++;
+    const nameTokens=[];
+    while(idx<texts.length && !NUM_RE.test(texts[idx])){ nameTokens.push(texts[idx]); idx++; }
+    const name = nameTokens.join(' ').trim();
+    if(!name) continue;
+    const tail = texts.slice(idx);
+    if(tail.length < subjectCount*3) continue;
+    out.push({name, nums:tail});
+  }
+  return out;
+}
+function toIntOrNull(s){
+  if(s==null) return null;
+  const v = parseFloat(String(s).replace(',', '.'));
+  if(isNaN(v)) return null;
+  return Math.round(v);
+}
+async function importDenemeFromPdf(file, examType){
+  if(!file) return;
+  if(!window.pdfjsLib){ showToast('PDF okuyucu yüklenemedi'); return; }
+  showToast('PDF okunuyor...');
+  try{
+    const rows = await extractPdfRows(file);
+    const subjInfo = detectDenemeSubjects(rows);
+    if(!subjInfo || !subjInfo.subjectCount){ showToast('Rapor formatı tanınamadı'); return; }
+    const subjectCount = subjInfo.subjectCount, subjNames = subjInfo.subjNames;
+    const totals = detectSoruSayisi(rows, subjNames);
+    const dataRows = parseDenemeDataRows(rows, subjectCount);
+    if(!dataRows.length){ showToast('Öğrenci satırı bulunamadı'); return; }
+
+    const tytCount = Math.min(4, subjectCount);
+    const startIdx = examType==='tyt' ? 0 : tytCount;
+    const endIdx = examType==='tyt' ? tytCount : subjectCount;
+    const chosenSubjects = subjNames.slice(startIdx, endIdx);
+    if(!chosenSubjects.length){ showToast('Bu raporda '+(examType==='tyt'?'TYT':'AYT')+' dersi bulunamadı'); return; }
+
+    const examLabel = detectExamLabel(rows);
+    const byName = {};
+    state.cls.students.forEach(s=>{ byName[normName(s.name)] = s; });
+
+    const list = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
+    let exam = list.find(e=>e.label===examLabel);
+    if(!exam){
+      const maxSlot = Math.max(0, ...list.map(e=>e.slot_no||0));
+      const { data, error } = await sb.from('deneme_exams').insert({class_id:state.cls.id, exam_type:examType, slot_no:maxSlot+1, label:examLabel, subjects:chosenSubjects}).select();
+      if(error){ showToast('Hata: '+error.message); return; }
+      exam = data[0];
+      if(examType==='tyt') state.cls.tytExams.push(exam); else state.cls.aytExams.push(exam);
+    } else {
+      exam.subjects = chosenSubjects;
+      await sb.from('deneme_exams').update({subjects:chosenSubjects}).eq('id', exam.id);
+    }
+
+    const scoreRows = [];
+    let matched=0, unmatched=0;
+    for(const row of dataRows){
+      const student = byName[normName(row.name)];
+      if(!student){ unmatched++; continue; }
+      matched++;
+      for(let i=0;i<chosenSubjects.length;i++){
+        const gi = startIdx+i;
+        const d = toIntOrNull(row.nums[gi*3]);
+        const y = toIntOrNull(row.nums[gi*3+1]);
+        const subjName = chosenSubjects[i];
+        const tot = totals[subjName];
+        const b = (tot!=null && d!=null && y!=null) ? (tot-d-y) : null;
+        scoreRows.push({ student_id: student.id, exam_id: exam.id, subject: subjName, dogru:d, yanlis:y, bos:b });
+      }
+    }
+    if(scoreRows.length){
+      const { error } = await sb.from('deneme_scores').upsert(scoreRows, {onConflict:'student_id,exam_id,subject'});
+      if(error){ showToast('Notlar kaydedilirken hata: '+error.message); return; }
+      state.cls.denemeScoresByExam[exam.id] = state.cls.denemeScoresByExam[exam.id]||{};
+      scoreRows.forEach(sr=>{
+        state.cls.denemeScoresByExam[exam.id][sr.student_id] = state.cls.denemeScoresByExam[exam.id][sr.student_id]||{};
+        state.cls.denemeScoresByExam[exam.id][sr.student_id][sr.subject] = { dogru:sr.dogru, yanlis:sr.yanlis, bos:sr.bos };
+      });
+    }
+    render();
+    logActivity('"'+examLabel+'" '+(examType==='tyt'?'TYT':'AYT')+' raporunu PDF\'den içe aktardı ('+matched+' öğrenci, '+chosenSubjects.length+' ders)');
+    showToast(matched+' öğrenci, '+chosenSubjects.length+' ders yüklendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):'')+(Object.keys(totals).length?'':' — Boş sayısı hesaplanamadı'));
+  }catch(err){ showToast('PDF okunamadı: '+err.message); }
+}
+
 async function importDenemeFromExcel(file, examType){
   if(!file) return;
   const label = prompt('Yeni '+(examType==='tyt'?'TYT':'AYT')+' denemesinin adı:');
@@ -1560,11 +1712,21 @@ function renderDenemeList(app, examType){
   app.innerHTML =
     '<button class="backlink" id="backDL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
     '<div class="pagehead"><h2>'+label+' Denemeleri</h2></div>' +
+    '<div class="card" style="background:var(--primary-soft);border:none;">' +
+      '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Sınav Sonuç Raporu (PDF) Yükle</div>' +
+      '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Kurumdan gelen "Sıralı Liste" PDF raporunu doğrudan yükle. Sınıfındaki öğrenciler isimle otomatik bulunur, '+label+' dersleri ve doğru/yanlış/boş notları otomatik girilir. Aynı raporu TYT ve AYT sekmelerinde ayrı ayrı yükleyebilirsin.</div>' +
+      '<button class="btn btn-primary full" id="addDenemePdfBtn">'+ic('upload')+'PDF Raporu Yükle</button>' +
+      '<input type="file" id="denemePdfFile" accept=".pdf" style="display:none;">' +
+    '</div>' +
+    '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
     '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
+    '<div class="section-title"><span>Elle Ekle (Excel)</span><span class="line"></span></div>' +
     '<button class="btn btn-soft full" id="addDenemeBtn">'+ic('upload')+'Excelden '+label+' Denemesi Ekle</button>' +
     '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
     '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Excel formatı: 1. sütun Öğrenci No, sonrasında her ders için 3 sütun (Doğru, Yanlış, Boş) yan yana. Başlık satırında ders adını yaz (örn. "Türkçe D", "Türkçe Y", "Türkçe B").</p>';
   document.getElementById('backDL').onclick = backToRoster;
+  document.getElementById('addDenemePdfBtn').onclick = ()=> document.getElementById('denemePdfFile').click();
+  document.getElementById('denemePdfFile').onchange = (e)=> importDenemeFromPdf(e.target.files[0], examType);
   document.getElementById('addDenemeBtn').onclick = ()=> document.getElementById('denemeExcelFile').click();
   document.getElementById('denemeExcelFile').onchange = (e)=> importDenemeFromExcel(e.target.files[0], examType);
   app.querySelectorAll('[data-enter]').forEach(btn=>{
