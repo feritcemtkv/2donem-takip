@@ -245,6 +245,7 @@ let state = {
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){ if(!d) return null; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function escapeHtml(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function normName(str){ return String(str==null?'':str).trim().replace(/\s+/g,' ').toLocaleUpperCase('tr').replace(/İ/g,'I'); }
 function studentById(id){ return state.cls.students.find(s=>s.id===id); }
 function sortedStudents(){
   return [...state.cls.students].sort((a,b)=>{
@@ -731,6 +732,90 @@ async function addQuizFromExcel(file){
     render();
     logActivity('"'+label.trim()+'" '+exWord+' eklendi, Excelden '+matched+' öğrenci sonucu yüklendi'+(unmatched?(' ('+unmatched+' satır eşleşmedi)'):''));
     showToast(exWord+' eklendi, '+matched+' öğrenci güncellendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):''));
+  }catch(err){ showToast('Dosya okunamadı: '+err.message); }
+}
+
+async function importKdsRaporuFromExcel(file){
+  if(!file) return;
+  showToast('Rapor okunuyor...');
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+
+    // Sadece Matematik sayfasını bul (İ/I ve büyük-küçük harf farklarına dayanıklı)
+    const normSheet = s => String(s||'').trim().toLocaleUpperCase('tr').replace(/İ/g,'I');
+    const sheetName = wb.SheetNames.find(n => normSheet(n).indexOf('MATE') >= 0);
+    if(!sheetName){ showToast('Bu dosyada Matematik sayfası bulunamadı'); return; }
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
+    if(rows.length < 3){ showToast('Rapor formatı tanınamadı'); return; }
+
+    // "Ad Soyad" başlığının olduğu satırı ve sütununu bul
+    let headerRow = -1, nameCol = -1;
+    for(let r=0; r<Math.min(rows.length,6); r++){
+      const idx = (rows[r]||[]).findIndex(c=>String(c).trim().toLocaleLowerCase('tr')==='ad soyad');
+      if(idx>=0){ headerRow=r; nameCol=idx; break; }
+    }
+    if(headerRow<0){ showToast('Rapor formatı tanınamadı (Ad Soyad sütunu bulunamadı)'); return; }
+    const titleRow = rows[headerRow-1] || [];
+    const subHeaderRow = rows[headerRow] || [];
+
+    // Sınav bloklarını bul: her blok 4 sütun (SS, D, Y, B), adı üst satırda blok başında
+    const blocks = [];
+    for(let c=nameCol+1; c<subHeaderRow.length; c+=4){
+      const ssLabel = String(subHeaderRow[c]||'').trim().toLocaleUpperCase('tr');
+      if(ssLabel!=='SS') continue;
+      let examName = String(titleRow[c]||'').trim();
+      if(!examName) examName = 'KDS '+(blocks.length+1);
+      blocks.push({examName, ssCol:c, dCol:c+1, yCol:c+2, bCol:c+3});
+    }
+    if(!blocks.length){ showToast('Sınav sütunları tanınamadı'); return; }
+
+    // Öğrencileri isimle eşleştir (bu rapordaki "No" sütunu güvenilir değil / sınıf içinde tekrar edebiliyor)
+    const byName = {};
+    state.cls.students.forEach(s=>{ byName[normName(s.name)] = s; });
+
+    let quizzesTouched = 0, totalEntries = 0, unmatchedNames = new Set();
+
+    for(const block of blocks){
+      let quiz = state.cls.quizzes.find(q=>q.label===block.examName);
+      if(!quiz){
+        const maxSlot = Math.max(0, ...state.cls.quizzes.map(q=>q.slot_no||0));
+        const { data, error } = await sb.from('quizzes').insert({class_id:state.cls.id, slot_no:maxSlot+1, label:block.examName}).select();
+        if(error){ showToast('Hata: '+error.message); continue; }
+        quiz = data[0];
+        state.cls.quizzes.push(quiz);
+      }
+      quizzesTouched++;
+
+      const upserts = [];
+      for(let r=headerRow+1; r<rows.length; r++){
+        const row = rows[r];
+        if(!row || row.every(c=>String(c).trim()==='')) continue;
+        const name = String(row[nameCol]||'').trim();
+        if(!name) continue;
+        const student = byName[normName(name)];
+        if(!student){ unmatchedNames.add(name); continue; }
+        const ssVal = String(row[block.ssCol]||'').trim().toLocaleLowerCase('tr');
+        if(ssVal.indexOf('girmedi')>=0) continue; // sınava girmedi, boş bırak
+        const d = parseInt(row[block.dCol]); const y = parseInt(row[block.yCol]); const b = parseInt(row[block.bCol]);
+        if(isNaN(d) && isNaN(y) && isNaN(b)) continue;
+        upserts.push({student_id: student.id, slot_no: quiz.slot_no, dogru: isNaN(d)?null:d, yanlis: isNaN(y)?null:y, bos: isNaN(b)?null:b});
+      }
+      if(upserts.length){
+        const { error } = await sb.from('quiz_scores').upsert(upserts);
+        if(!error){
+          upserts.forEach(u=>{
+            state.cls.quizScores[u.student_id] = state.cls.quizScores[u.student_id] || {};
+            state.cls.quizScores[u.student_id][quiz.slot_no] = { dogru:u.dogru, yanlis:u.yanlis, bos:u.bos };
+          });
+          totalEntries += upserts.length;
+        }
+      }
+    }
+    render();
+    logActivity('Branş bazlı rapordan Matematik KDS notlarını içe aktardı ('+quizzesTouched+' sınav, '+totalEntries+' not)');
+    showToast(quizzesTouched+' KDS işlendi, '+totalEntries+' not girildi'+(unmatchedNames.size?(', '+unmatchedNames.size+' öğrenci eşleşmedi'):''));
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 
@@ -1400,11 +1485,20 @@ function renderQuizPicker(app){
   app.innerHTML =
     '<button class="backlink" id="back7">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
     '<div class="pagehead"><h2>'+exWord+' Notu Gir</h2></div>' +
-    '<button class="btn btn-soft full" id="addQuizExcelBtn" style="margin-bottom:16px;">'+ic('upload')+'Excelden Yeni '+exWord+' Ekle</button>' +
+    '<div class="card" style="background:var(--primary-soft);border:none;">' +
+      '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Branş Bazlı Rapor Yükle</div>' +
+      '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Okuldan aldığın "Branş Bazlı Sınavlar Raporu" Excel dosyasını doğrudan yükle. İçindeki Matematik sınavlarının hepsi otomatik olarak ayrı '+exWord+' olarak eklenir, isimler otomatik atanır, öğrenci doğru/yanlış/boşları otomatik girilir.</div>' +
+      '<button class="btn btn-primary full" id="addKdsRaporBtn">'+ic('upload')+'Rapor Excelini Yükle</button>' +
+      '<input type="file" id="kdsRaporFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    '</div>' +
+    '<div class="section-title"><span>Tek '+exWord+' Ekle (elle)</span><span class="line"></span></div>' +
+    '<button class="btn btn-soft full" id="addQuizExcelBtn" style="margin-bottom:16px;">'+ic('upload')+'Excelden Tek '+exWord+' Ekle</button>' +
     '<input type="file" id="addQuizExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
     '<div class="section-title"><span>Var Olan '+examWordPlural()+'</span><span class="line"></span></div>' +
-    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı, yukarıdan Excelden ekleyebilirsin.</div>');
+    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı, yukarıdan ekleyebilirsin.</div>');
   document.getElementById('back7').onclick = backToRoster;
+  document.getElementById('addKdsRaporBtn').onclick = ()=> document.getElementById('kdsRaporFile').click();
+  document.getElementById('kdsRaporFile').onchange = (e)=> importKdsRaporuFromExcel(e.target.files[0]);
   document.getElementById('addQuizExcelBtn').onclick = ()=> document.getElementById('addQuizExcelFile').click();
   document.getElementById('addQuizExcelFile').onchange = (e)=> addQuizFromExcel(e.target.files[0]);
   app.querySelectorAll('[data-pick]').forEach(el=>{
