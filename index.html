@@ -402,11 +402,13 @@ async function loadClassDetail(classId){
   const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
   const { data: denemeExams } = await sb.from('deneme_exams').select('*').eq('class_id',classId).order('slot_no');
   const ids = (students||[]).map(s=>s.id);
-  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[], denemeScoreRows=[];
+  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[], denemeScoreRows=[], counselingNoteRows=[];
   if(ids.length){
     const r1 = await sb.from('homework_status').select('*').in('student_id', ids); hwStatusRows = r1.data||[];
     const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids); rubricScoreRows = r2.data||[];
     const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids); quizScoreRows = r3.data||[];
+    const r5 = await sb.from('counseling_notes').select('*').in('student_id', ids).order('note_date', {ascending:false}).order('created_at', {ascending:false});
+    counselingNoteRows = r5.data||[];
   }
   const examIds = (denemeExams||[]).map(e=>e.id);
   if(examIds.length){
@@ -430,6 +432,11 @@ async function loadClassDetail(classId){
     denemeScoresByExam[row.exam_id][row.student_id] = denemeScoresByExam[row.exam_id][row.student_id]||{};
     denemeScoresByExam[row.exam_id][row.student_id][row.subject] = { dogru: row.dogru, yanlis: row.yanlis, bos: row.bos };
   }
+  const counselingNotes = {};
+  for(const row of counselingNoteRows){
+    counselingNotes[row.student_id] = counselingNotes[row.student_id]||[];
+    counselingNotes[row.student_id].push(row);
+  }
   state.cls = {
     id: classId, name: classObj?classObj.name:'',
     students: students||[], homeworks: homeworks||[], hwStatus,
@@ -438,6 +445,7 @@ async function loadClassDetail(classId){
     tytExams: (denemeExams||[]).filter(e=>e.exam_type==='tyt'),
     aytExams: (denemeExams||[]).filter(e=>e.exam_type==='ayt'),
     denemeScoresByExam,
+    counselingNotes,
   };
   state.rubricLevel = (state.cls.perfTasks[0] && state.cls.perfTasks[0].label) || null;
   state.loading = false;
@@ -477,6 +485,26 @@ function quizSlotAvgDYB(slotNo){
   return { dogru: avg('dogru'), yanlis: avg('yanlis'), bos: avg('bos') };
 }
 
+async function addCounselingNote(sid, noteDate, content){
+  content = (content||'').trim();
+  if(!content) return;
+  const { data, error } = await sb.from('counseling_notes').insert({student_id:sid, note_date: noteDate||todayStr(), content}).select();
+  if(error){ showToast('Hata: '+error.message); return; }
+  state.cls.counselingNotes[sid] = state.cls.counselingNotes[sid] || [];
+  state.cls.counselingNotes[sid].unshift(data[0]);
+  render();
+  const s = studentById(sid);
+  if(s) logActivity('"'+s.name+'" öğrencisiyle görüşme notu ekledi');
+  showToast('Görüşme notu eklendi');
+}
+async function deleteCounselingNote(sid, noteId){
+  if(!confirm('Bu görüşme notu silinsin mi?')) return;
+  state.cls.counselingNotes[sid] = (state.cls.counselingNotes[sid]||[]).filter(n=>n.id!==noteId);
+  render();
+  await sb.from('counseling_notes').delete().eq('id', noteId);
+  showToast('Görüşme notu silindi');
+}
+
 async function toggleAbsent(sid){
   const s = studentById(sid); if(!s) return;
   s.absent = !s.absent; render();
@@ -510,7 +538,7 @@ async function renameStudent(sid, newName){
 async function deleteStudent(sid){
   const s = studentById(sid); const name = s?s.name:'Öğrenci';
   state.cls.students = state.cls.students.filter(x=>x.id!==sid);
-  delete state.cls.hwStatus[sid]; delete state.cls.rubricScores[sid]; delete state.cls.quizScores[sid];
+  delete state.cls.hwStatus[sid]; delete state.cls.rubricScores[sid]; delete state.cls.quizScores[sid]; delete state.cls.counselingNotes[sid];
   state.view='roster'; state.studentId=null;
   render();
   await sb.from('students').delete().eq('id', sid);
@@ -1354,6 +1382,24 @@ function renderStudentDetail(app){
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     (g12 ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
     (g12 ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
+    (g12 ? '<div class="section-title"><span>Danışmanlık Görüşmeleri</span><span class="line"></span></div>' +
+      '<div class="card">' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
+          '<input type="date" id="counselDate" value="'+todayStr()+'" style="border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;">' +
+          '<textarea id="counselNote" placeholder="Bugünkü görüşmede konuşulanlar, alınan kararlar..." style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:60px;resize:vertical;"></textarea>' +
+        '</div>' +
+        '<button class="btn btn-primary full" id="addCounselBtn">'+ic('plus')+'Görüşme Notu Ekle</button>' +
+      '</div>' +
+      ((cls.counselingNotes[s.id]||[]).map(n=>
+        '<div class="card" style="padding:12px 14px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+            '<div style="font-weight:700;font-size:12.5px;color:var(--primary-deep);">'+fmtDate(n.note_date)+'</div>' +
+            '<button class="iconbtn" data-delnote="'+n.id+'">'+ic('trash')+'</button>' +
+          '</div>' +
+          '<div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5;">'+escapeHtml(n.content)+'</div>' +
+        '</div>'
+      ).join('') || '<div class="empty">Henüz görüşme notu eklenmedi.</div>')
+      : '') +
     '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
     '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
@@ -1366,6 +1412,17 @@ function renderStudentDetail(app){
     '</div>';
 
   document.getElementById('toRoster').onclick = backToRoster;
+  if(g12){
+    document.getElementById('addCounselBtn').onclick = ()=>{
+      const dateEl = document.getElementById('counselDate');
+      const noteEl = document.getElementById('counselNote');
+      if(!noteEl.value.trim()){ showToast('Not boş olamaz'); return; }
+      addCounselingNote(s.id, dateEl.value, noteEl.value);
+    };
+    app.querySelectorAll('[data-delnote]').forEach(btn=>{
+      btn.onclick = ()=> deleteCounselingNote(s.id, btn.dataset.delnote);
+    });
+  }
   app.querySelectorAll('.toggle').forEach(btn=>{
     if(btn.disabled) return;
     btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
