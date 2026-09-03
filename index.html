@@ -353,6 +353,20 @@ function openNewClassModal(){
   document.getElementById('mCancel').onclick = closeModal;
   document.getElementById('mSave').onclick = ()=> addClass(document.getElementById('mClassName').value);
 }
+function openActionMenu(title, actions){
+  const btns = actions.map((a,i)=>
+    '<button class="btn btn-primary full" data-menu-i="'+i+'" style="margin-bottom:8px;justify-content:flex-start;">'+ic(a.icon)+a.label+'</button>'
+  ).join('');
+  openModalHtml(
+    '<h3>'+escapeHtml(title)+'</h3>' +
+    '<div style="display:flex;flex-direction:column;margin-top:4px;">'+btns+'</div>' +
+    '<div class="modalactions"><button class="btn btn-outline full" id="mCancelMenu">Vazgeç</button></div>'
+  );
+  document.getElementById('mCancelMenu').onclick = closeModal;
+  actions.forEach((a,i)=>{
+    document.querySelector('[data-menu-i="'+i+'"]').onclick = ()=>{ closeModal(); a.onClick(); };
+  });
+}
 
 async function loadClasses(){
   const { data } = await sb.from('classes').select('*').order('sort_order');
@@ -1252,12 +1266,11 @@ function renderRoster(app){
       '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
       '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
   } else {
-    const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     midSections =
-      '<div class="section-title"><span>'+exWordPl+'</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-soft" id="quizEditBtn">'+ic('file')+exWordPl+' Düzenle</button><button class="btn btn-primary" id="quizEnterBtn">'+ic('clipboard')+exWord+' Notu Gir</button></div>' +
-      '<div class="section-title"><span>Performans</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-soft" id="perfEditBtn">'+ic('book')+'Performans Ödevlerini Düzenle</button><button class="btn btn-primary" id="perfEnterBtn">'+ic('target')+'Performans Notu Gir</button></div>';
+      '<div class="actionrow">' +
+        '<button class="btn btn-primary" id="quizMenuBtn">'+ic('file')+'KDS</button>' +
+        '<button class="btn btn-primary" id="perfMenuBtn">'+ic('target')+'Performans</button>' +
+      '</div>';
   }
 
   app.innerHTML =
@@ -1269,8 +1282,8 @@ function renderRoster(app){
       (g12 ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') :
         ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>')) +
     '</div>' +
-    '<div class="section-title"><span>Ödev Takibi</span><span class="line"></span></div>' +
-    '<div class="actionrow"><button class="btn btn-soft" id="hwEditBtn">'+ic('flag')+'Ödevleri Düzenle</button><button class="btn btn-primary" id="hwCheckBtn">'+ic('clipboard')+'Ödevleri Kontrol Et</button></div>' +
+    '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
+    '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>' +
     midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
@@ -1286,20 +1299,27 @@ function renderRoster(app){
     '</div>';
 
   document.getElementById('toHome').onclick = backToHome;
-  document.getElementById('hwEditBtn').onclick = ()=>{ state.view='homeworks'; render(); };
-  document.getElementById('hwCheckBtn').onclick = ()=>{ state.view='hw_picker'; render(); };
+  document.getElementById('hwMenuBtn').onclick = ()=> openActionMenu('Ödevler', [
+    {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
+    {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
+  ]);
   if(g12){
     document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
     document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
   } else {
-    document.getElementById('quizEditBtn').onclick = ()=>{ state.view='quizzes'; render(); };
-    document.getElementById('quizEnterBtn').onclick = ()=>{ state.view='quiz_picker'; render(); };
-    document.getElementById('perfEditBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
-    document.getElementById('perfEnterBtn').onclick = ()=>{
-      if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
-      if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
-      state.view='rubric'; render();
-    };
+    const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
+    document.getElementById('quizMenuBtn').onclick = ()=> openActionMenu('KDS', [
+      {label:exWordPl+' Düzenle', icon:'file', onClick:()=>{ state.view='quizzes'; render(); }},
+      {label:exWord+' Notu Gir', icon:'clipboard', onClick:()=>{ state.view='quiz_picker'; render(); }},
+    ]);
+    document.getElementById('perfMenuBtn').onclick = ()=> openActionMenu('Performans', [
+      {label:'Performans Ödevlerini Düzenle', icon:'book', onClick:()=>{ state.view='perfTasks'; render(); }},
+      {label:'Performans Notu Gir', icon:'target', onClick:()=>{
+        if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
+        if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+        state.view='rubric'; render();
+      }},
+    ]);
   }
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
