@@ -265,6 +265,7 @@ function showToast(msg){
   showToast._t = setTimeout(()=>t.classList.remove('show'), 1700);
 }
 function isGrade12(name){ name = name || (state.cls?state.cls.name:''); return /12/.test(name); }
+function isGrade11(name){ name = name || (state.cls?state.cls.name:''); return /11/.test(name); }
 function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS'; }
 function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : "KDS'leri"; }
 
@@ -1205,11 +1206,13 @@ function classGridHtml(){
   let html = '<div class="classgrid">';
   state.classes.forEach(c=>{
     const g12 = isGrade12(c.name);
+    const g11 = isGrade11(c.name);
+    let tags = '<span class="tag blue">Ödev Takibi</span>';
+    if(!g12) tags += '<span class="tag teal">Performans</span><span class="tag amber">KDS</span>';
+    if(g12 || g11) tags += '<span class="tag amber">TYT</span><span class="tag amber">AYT</span>';
     html += '<div class="classcard" data-openclass="'+c.id+'">' +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
-      '<div class="tags"><span class="tag blue">Ödev Takibi</span>' +
-      (g12 ? '<span class="tag amber">TYT</span><span class="tag amber">AYT</span>' : '<span class="tag teal">Performans</span><span class="tag amber">KDS</span>') +
-      '</div>' +
+      '<div class="tags">'+tags+'</div>' +
     '</div>';
   });
   html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button></div>';
@@ -1244,6 +1247,8 @@ function backToHome(){ state.page='home'; state.cls=null; render(); }
 function renderRoster(app){
   const cls = state.cls;
   const g12 = isGrade12(cls.name);
+  const g11 = isGrade11(cls.name);
+  const showTytAyt = g12 || g11;
   const hwAvg = hwClassAvg();
   const sorted = sortedStudents();
   const list = sorted.map(s=>{
@@ -1259,18 +1264,19 @@ function renderRoster(app){
   }).join('');
 
   let midSections = '';
-  if(g12){
-    midSections =
-      '<div class="section-title"><span>TYT</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-primary full" id="tytBtn">'+ic('clipboard')+'TYT Denemeleri</button></div>' +
-      '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
-  } else {
-    midSections =
+  if(!g12){
+    midSections +=
       '<div class="actionrow">' +
         '<button class="btn btn-primary" id="quizMenuBtn">'+ic('file')+'KDS</button>' +
         '<button class="btn btn-primary" id="perfMenuBtn">'+ic('target')+'Performans</button>' +
       '</div>';
+  }
+  if(showTytAyt){
+    midSections +=
+      '<div class="section-title"><span>TYT</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-primary full" id="tytBtn">'+ic('clipboard')+'TYT Denemeleri</button></div>' +
+      '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
   }
 
   app.innerHTML =
@@ -1279,8 +1285,8 @@ function renderRoster(app){
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
       '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
-      (g12 ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') :
-        ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>')) +
+      (showTytAyt ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') : '') +
+      (!g12 ? ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>') : '') +
     '</div>' +
     '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
     '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>' +
@@ -1303,23 +1309,21 @@ function renderRoster(app){
     {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
     {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
   ]);
-  if(g12){
-    document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
-    document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
-  } else {
+  if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     document.getElementById('quizMenuBtn').onclick = ()=> openActionMenu('KDS', [
       {label:exWordPl+' Düzenle', icon:'file', onClick:()=>{ state.view='quizzes'; render(); }},
       {label:exWord+' Notu Gir', icon:'clipboard', onClick:()=>{ state.view='quiz_picker'; render(); }},
     ]);
-    document.getElementById('perfMenuBtn').onclick = ()=> openActionMenu('Performans', [
-      {label:'Performans Ödevlerini Düzenle', icon:'book', onClick:()=>{ state.view='perfTasks'; render(); }},
-      {label:'Performans Notu Gir', icon:'target', onClick:()=>{
-        if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
-        if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
-        state.view='rubric'; render();
-      }},
-    ]);
+    document.getElementById('perfMenuBtn').onclick = ()=>{
+      if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
+      if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+      state.view='rubric'; render();
+    };
+  }
+  if(showTytAyt){
+    document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
+    document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
   }
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
@@ -1346,6 +1350,8 @@ function renderStudentDetail(app){
   if(!s){ return backToRoster(); }
   const cls = state.cls;
   const g12 = isGrade12(cls.name);
+  const g11 = isGrade11(cls.name);
+  const showTytAyt = g12 || g11;
   const today = todayStr();
 
   const hwP = hwPct(s.id);
@@ -1364,7 +1370,8 @@ function renderStudentDetail(app){
       const total = rubricTotal(s.id, t.label);
       return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
     }).join('');
-  } else {
+  }
+  if(showTytAyt){
     const buildExamCards = (exams)=> exams.map(ex=>{
       const scores = (cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
       const subjRows = (ex.subjects||[]).map(subj=>{
@@ -1400,8 +1407,8 @@ function renderStudentDetail(app){
     '</div>' +
     (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+examWord(cls.name)+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
-    (g12 ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
-    (g12 ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
+    (showTytAyt ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
+    (showTytAyt ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
     (g12 ? '<div class="section-title"><span>Danışmanlık Görüşmeleri</span><span class="line"></span></div>' +
       '<div class="card">' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
@@ -1570,6 +1577,7 @@ function renderRubric(app){
     '<div class="levelpicker">' +
       state.cls.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
       '<button class="btn btn-outline btn-sm" id="editToggle">'+(state.rubricEdit?'Bitti':'Ölçütleri Düzenle')+'</button>' +
+      '<button class="btn btn-outline btn-sm" id="manageTasksBtn">'+ic('book')+'Ödevleri Yönet</button>' +
     '</div>';
 
   let body = '';
@@ -1635,6 +1643,7 @@ function renderRubric(app){
 
   document.getElementById('back5').onclick = backToRoster;
   document.getElementById('editToggle').onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
+  document.getElementById('manageTasksBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
   app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
   });
