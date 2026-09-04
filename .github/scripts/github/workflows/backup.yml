@@ -18,7 +18,7 @@ jobs:
           node-version: '22'
 
       - name: Paketleri kur
-        run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund
+        run: npm install @supabase/supabase-js googleapis --no-audit --no-fund
 
       - name: Yedekleme scriptini çalıştır
         env:
