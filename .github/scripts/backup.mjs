@@ -25,6 +25,13 @@ const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+function timestampStrTR() {
+  // Türkiye saatine çevir (UTC+3, DST yok) ve dosya adına uygun formatta döndür
+  const d = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())
+    + '_' + pad(d.getUTCHours()) + '-' + pad(d.getUTCMinutes());
+}
 
 // Sadece BU öğretmenin kendi sınıflarını (owner_id ile) ve onlara bağlı
 // öğrenci/ödev/not verilerini çeker — sistemdeki diğer öğretmenlerin
@@ -125,7 +132,7 @@ async function main() {
     throw folderErr;
   }
 
-  const filename = TEACHER_USERNAME + '_yedek_' + todayStr() + '.json';
+  const filename = TEACHER_USERNAME + '_yedek_' + timestampStrTR() + '.json';
   console.log(filename + ' Drive\'a yükleniyor (' + buf.length + ' byte)...');
   const stream = Readable.from(buf);
   await drive.files.create({
