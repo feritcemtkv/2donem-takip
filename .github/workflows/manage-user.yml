@@ -1,0 +1,26 @@
+name: Kullanıcı Ekle veya Şifre Değiştir
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  manage-user:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repoyu indir
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Paketleri kur
+        run: npm install @supabase/supabase-js --no-audit --no-fund
+
+      - name: Kullanıcı işlemini çalıştır
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_USERNAME: ${{ secrets.PW_USERNAME }}
+          PW_PASSWORD: ${{ secrets.PW_PASSWORD }}
+        run: node .github/scripts/manage-user.mjs
