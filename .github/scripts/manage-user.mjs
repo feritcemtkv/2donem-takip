@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 const PW_USERNAME = (process.env.PW_USERNAME || '').trim();
-const PW_PASSWORD = (process.env.PW_PASSWORD || '').trim();a
+const PW_PASSWORD = (process.env.PW_PASSWORD || '').trim();
 
 const missing = [];
 if (!SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
