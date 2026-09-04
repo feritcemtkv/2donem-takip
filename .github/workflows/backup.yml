@@ -15,7 +15,7 @@ jobs:
       - name: Node.js kur
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Paketleri kur
         run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund
