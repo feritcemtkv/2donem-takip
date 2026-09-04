@@ -125,7 +125,7 @@ async function main() {
     throw folderErr;
   }
 
-  const filename = 'yedek_veritabani_' + todayStr() + '.json';
+  const filename = TEACHER_USERNAME + '_yedek_' + todayStr() + '.json';
   console.log(filename + ' Drive\'a yükleniyor (' + buf.length + ' byte)...');
   const stream = Readable.from(buf);
   await drive.files.create({
