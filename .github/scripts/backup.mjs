@@ -66,7 +66,7 @@ async function main() {
   const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
   const auth = new google.auth.GoogleAuth({
     credentials: creds,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    scopes: ['https://www.googleapis.com/auth/drive'],
   });
   const authClient = await auth.getClient();
 
