@@ -430,6 +430,178 @@ async function deleteClass(){
   showToast('Sınıf silindi');
 }
 
+function autoWidth(rows){
+  if(!rows || !rows.length) return [];
+  const keys = Object.keys(rows[0]);
+  return keys.map(k=>{
+    let maxLen = k.length;
+    rows.forEach(r=>{ const len = String(r[k]??'').length; if(len>maxLen) maxLen=len; });
+    return { wch: Math.min(Math.max(maxLen+2, 8), 42) };
+  });
+}
+function addSheet(wb, rows, sheetName){
+  if(!rows || !rows.length) return;
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = autoWidth(rows);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+}
+function exportClassBackup(){
+  const cls = state.cls;
+  if(!cls.students.length){ showToast('Sınıfta öğrenci yok, yedek oluşturulamadı'); return; }
+  const g12 = isGrade12(cls.name);
+  const showTytAyt = g12 || isGrade11(cls.name);
+  const sorted = sortedStudents();
+  const wb = XLSX.utils.book_new();
+
+  addSheet(wb, sorted.map(s=>({
+    'No': s.no||'', 'Ad Soyad': s.name,
+    'Ödev %': hwPct(s.id), 'Okulda Yok': s.absent?'Evet':'Hayır',
+    'Öğretmen Notu': s.teacher_note||'',
+  })), 'Öğrenciler');
+
+  const today = todayStr();
+  const hwRows = [];
+  sorted.forEach(s=>{
+    cls.homeworks.forEach(h=>{
+      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+      const checked = h.check_date && h.check_date<=today;
+      hwRows.push({
+        'No': s.no||'', 'Ad Soyad': s.name,
+        'Ödev': h.topic||('Ödev #'+h.slot_no),
+        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+      });
+    });
+  });
+  addSheet(wb, hwRows, 'Ödevler');
+
+  if(!g12 && cls.quizzes.length){
+    const rows = [];
+    sorted.forEach(s=>{
+      cls.quizzes.forEach(q=>{
+        const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
+        rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'KDS': q.label,
+          'Doğru': v.dogru??'', 'Yanlış': v.yanlis??'', 'Boş': v.bos??'' });
+      });
+    });
+    addSheet(wb, rows, 'KDS');
+  }
+
+  if(!g12 && cls.perfTasks.length){
+    const rows = [];
+    sorted.forEach(s=>{
+      cls.perfTasks.forEach(t=>{
+        const total = rubricTotal(s.id, t.label);
+        rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Performans Ödevi': t.label,
+          'Puan': total.sum, 'Tam Puan': total.max, 'Not': total.grade??'' });
+      });
+    });
+    addSheet(wb, rows, 'Performans');
+  }
+
+  if(showTytAyt){
+    ['tyt','ayt'].forEach(type=>{
+      const exams = type==='tyt'?cls.tytExams:cls.aytExams;
+      if(!exams.length) return;
+      const rows = [];
+      sorted.forEach(s=>{
+        exams.forEach(ex=>{
+          const scores = (cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
+          (ex.subjects||[]).forEach(subj=>{
+            const v = scores[subj] || {};
+            rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Sınav': ex.label, 'Ders': subj,
+              'Doğru': v.dogru??'', 'Yanlış': v.yanlis??'', 'Boş': v.bos??'' });
+          });
+        });
+      });
+      addSheet(wb, rows, type==='tyt'?'TYT':'AYT');
+    });
+  }
+
+  if(g12){
+    const rows = [];
+    sorted.forEach(s=>{
+      (cls.counselingNotes[s.id]||[]).forEach(n=>{
+        rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Tarih': n.note_date||'', 'Not': n.content||'' });
+      });
+    });
+    addSheet(wb, rows, 'Danışmanlık');
+  }
+
+  const safeName = (cls.name||'sinif').replace(/[\\/:*?"<>|]/g,'_');
+  XLSX.writeFile(wb, safeName+'_yedek_'+today+'.xlsx');
+  logActivity('Excel yedeği indirdi');
+  showToast('Excel yedeği indirildi');
+}
+function exportParentReport(sid){
+  const cls = state.cls;
+  const s = studentById(sid);
+  if(!s){ showToast('Öğrenci bulunamadı'); return; }
+  const g12 = isGrade12(cls.name);
+  const showTytAyt = g12 || isGrade11(cls.name);
+  const today = todayStr();
+  const wb = XLSX.utils.book_new();
+
+  let perfAvg = '';
+  if(!g12 && cls.perfTasks.length){
+    const grades = cls.perfTasks.map(t=>rubricTotal(s.id,t.label).grade).filter(v=>v!=null);
+    if(grades.length) perfAvg = Math.round(grades.reduce((a,b)=>a+b,0)/grades.length);
+  }
+  addSheet(wb, [{
+    'No': s.no||'', 'Ad Soyad': s.name,
+    'Sınıf': cls.name, 'Ödev Tamamlama %': hwPct(s.id),
+    'Performans Ort.': perfAvg,
+  }], 'Öğrenci Bilgisi');
+
+  const hwRows = cls.homeworks.map(h=>{
+    const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+    const checked = h.check_date && h.check_date<=today;
+    return {
+      'Ödev': h.topic||('Ödev #'+h.slot_no),
+      'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+      'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+    };
+  });
+  addSheet(wb, hwRows, 'Ödev Geçmişi');
+
+  if(!g12 && cls.quizzes.length){
+    const rows = cls.quizzes.map(q=>{
+      const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
+      return { 'KDS': q.label, 'Doğru': v.dogru??'', 'Yanlış': v.yanlis??'', 'Boş': v.bos??'' };
+    });
+    addSheet(wb, rows, 'KDS');
+  }
+
+  if(!g12 && cls.perfTasks.length){
+    const rows = cls.perfTasks.map(t=>{
+      const total = rubricTotal(s.id, t.label);
+      return { 'Performans Ödevi': t.label, 'Puan': total.sum, 'Tam Puan': total.max, 'Not': total.grade??'' };
+    });
+    addSheet(wb, rows, 'Performans');
+  }
+
+  if(showTytAyt){
+    ['tyt','ayt'].forEach(type=>{
+      const exams = type==='tyt'?cls.tytExams:cls.aytExams;
+      if(!exams.length) return;
+      const rows = [];
+      exams.forEach(ex=>{
+        const scores = (cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
+        (ex.subjects||[]).forEach(subj=>{
+          const v = scores[subj] || {};
+          rows.push({ 'Sınav': ex.label, 'Ders': subj, 'Doğru': v.dogru??'', 'Yanlış': v.yanlis??'', 'Boş': v.bos??'' });
+        });
+      });
+      addSheet(wb, rows, type==='tyt'?'TYT':'AYT');
+    });
+  }
+
+  const safeName = (s.name||'ogrenci').replace(/[\\/:*?"<>|]/g,'_');
+  XLSX.writeFile(wb, safeName+'_veli_raporu_'+today+'.xlsx');
+  logActivity('"'+s.name+'" için veli raporu indirdi');
+  showToast('Veli raporu indirildi');
+}
+
 async function loadClassDetail(classId){
   state.loading = true; render();
   const classObj = state.classes.find(c=>c.id===classId);
@@ -1321,12 +1493,14 @@ function renderRoster(app){
     '<button class="btn btn-outline full" id="excelImportBtn" style="margin-top:8px;">'+ic('upload')+'Excelden Öğrenci Listesi Yükle</button>' +
     '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
     '<div class="section-title"><span>Sınıf İşlemleri</span><span class="line"></span></div>' +
+    '<button class="btn btn-soft full" id="backupBtn" style="margin-bottom:10px;">'+ic('file')+'Excel Yedek İndir</button>' +
     '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
       '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
     '</div>';
 
   document.getElementById('toHome').onclick = backToHome;
+  document.getElementById('backupBtn').onclick = exportClassBackup;
   document.getElementById('hwMenuBtn').onclick = ()=> openActionMenu('Ödevler', [
     {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
     {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
@@ -1450,6 +1624,8 @@ function renderStudentDetail(app){
     '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
     '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.teacher_note||'')+'</textarea>' +
+    '<div class="section-title" style="margin-top:24px;"><span>Veli Görüşmesi</span><span class="line"></span></div>' +
+    '<button class="btn btn-primary full" id="parentReportBtn">'+ic('file')+'Veli Raporu İndir (Excel)</button>' +
     '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
     '<div class="card" style="display:flex;gap:10px;">' +
       '<button class="btn btn-outline" id="absentBtn" style="flex:1;justify-content:center;">'+(s.absent?'Aktif Yap':'Okulda Yok İşaretle')+'</button>' +
@@ -1458,6 +1634,7 @@ function renderStudentDetail(app){
     '</div>';
 
   document.getElementById('toRoster').onclick = backToRoster;
+  document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
   if(g12){
     document.getElementById('addCounselBtn').onclick = ()=>{
       const dateEl = document.getElementById('counselDate');
