@@ -1,1 +1,28 @@
+name: Otomatik Excel Yedek
 
+on:
+  schedule:
+    - cron: '0 20 * * *'   # her gün 20:00 UTC = 23:00 Türkiye saati
+  workflow_dispatch: {}     # bu, "Run workflow" ile elle de tetiklenebilmesini sağlar
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repoyu indir
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Paketleri kur
+        run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund
+
+      - name: Yedekleme scriptini çalıştır
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: node .github/scripts/backup.mjs
