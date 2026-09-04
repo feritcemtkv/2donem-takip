@@ -354,6 +354,28 @@ function openNewClassModal(){
   document.getElementById('mCancel').onclick = closeModal;
   document.getElementById('mSave').onclick = ()=> addClass(document.getElementById('mClassName').value);
 }
+function openNewStudentModal(){
+  openModalHtml(
+    '<h3>Yeni Öğrenci Ekle</h3>' +
+    '<label>Öğrenci No</label><input type="text" id="mStudentNo" placeholder="Örn. 12" inputmode="numeric">' +
+    '<label>Adı Soyadı</label><input type="text" id="mStudentName" placeholder="Ad Soyad">' +
+    '<div class="modalactions"><button class="btn btn-outline" id="mCancelStu">Vazgeç</button><button class="btn btn-primary" id="mSaveStu">Öğrenciyi Ekle</button></div>'
+  );
+  const submit = ()=>{
+    const name = document.getElementById('mStudentName').value.trim();
+    const no = document.getElementById('mStudentNo').value.trim();
+    if(!name){ showToast('Ad soyad girilmeli'); return; }
+    closeModal();
+    addStudent(name, no);
+  };
+  document.getElementById('mCancelStu').onclick = closeModal;
+  document.getElementById('mSaveStu').onclick = submit;
+  const $no = document.getElementById('mStudentNo');
+  const $name = document.getElementById('mStudentName');
+  $no.addEventListener('keydown', e=>{ if(e.key==='Enter') $name.focus(); });
+  $name.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$no.focus(), 50);
+}
 function openActionMenu(title, actions){
   const btns = actions.map((a,i)=>
     '<button class="btn btn-primary full" data-menu-i="'+i+'" style="margin-bottom:8px;justify-content:flex-start;">'+ic(a.icon)+a.label+'</button>'
@@ -533,9 +555,9 @@ async function updateStudentField(sid, field, value){
   if(s) logActivity('"'+s.name+'" öğrencisinin bilgisini güncelledi');
   showToast('Kaydedildi');
 }
-async function addStudent(name){
+async function addStudent(name, no){
   const maxOrder = Math.max(0, ...state.cls.students.map(s=>s.sort_order||0));
-  const { data, error } = await sb.from('students').insert({class_id:state.cls.id, name, sort_order:maxOrder+1}).select();
+  const { data, error } = await sb.from('students').insert({class_id:state.cls.id, name, no: no||null, sort_order:maxOrder+1}).select();
   if(error){ showToast('Hata: '+error.message); return; }
   if(data && data[0]) state.cls.students.push(data[0]);
   render();
@@ -1330,10 +1352,7 @@ function renderRoster(app){
   app.querySelectorAll('[data-student]').forEach(el=>{
     el.onclick = ()=>{ state.studentId=el.dataset.student; state.view='student'; render(); };
   });
-  document.getElementById('addStudentBtn').onclick = ()=>{
-    const name = prompt('Yeni öğrencinin adı soyadı:');
-    if(name && name.trim()) addStudent(name.trim());
-  };
+  document.getElementById('addStudentBtn').onclick = openNewStudentModal;
   document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
   document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
   document.getElementById('renameClassBtn').onclick = ()=>{
