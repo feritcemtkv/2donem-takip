@@ -4,14 +4,17 @@ import { Readable } from 'stream';
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-const GOOGLE_SERVICE_ACCOUNT_JSON = (process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim();
+const GOOGLE_CLIENT_SECRET = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+const GOOGLE_REFRESH_TOKEN = (process.env.GOOGLE_REFRESH_TOKEN || '').trim();
 const GOOGLE_DRIVE_FOLDER_ID = (process.env.GOOGLE_DRIVE_FOLDER_ID || '').trim();
 
-if (!SUPABASE_SERVICE_ROLE_KEY || !GOOGLE_SERVICE_ACCOUNT_JSON || !GOOGLE_DRIVE_FOLDER_ID) {
-  const missing = [];
-  if (!SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-  if (!GOOGLE_SERVICE_ACCOUNT_JSON) missing.push('GOOGLE_SERVICE_ACCOUNT_JSON');
-  if (!GOOGLE_DRIVE_FOLDER_ID) missing.push('GOOGLE_DRIVE_FOLDER_ID');
+const required = {
+  SUPABASE_SERVICE_ROLE_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+  GOOGLE_REFRESH_TOKEN, GOOGLE_DRIVE_FOLDER_ID,
+};
+const missing = Object.entries(required).filter(([, v]) => !v).map(([k]) => k);
+if (missing.length) {
   console.error('Eksik veya boş secret(lar): ' + missing.join(', '));
   process.exit(1);
 }
@@ -52,27 +55,20 @@ async function main() {
   };
   const buf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
 
-  console.log('Google Drive\'a giriş yapılıyor...');
-  console.log('  GOOGLE_DRIVE_FOLDER_ID uzunluğu: ' + GOOGLE_DRIVE_FOLDER_ID.length + ' karakter');
-  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-  console.log('  Servis hesabı: ' + creds.client_email);
-  const auth = new google.auth.GoogleAuth({
-    credentials: creds,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  });
-  const authClient = await auth.getClient();
-  const drive = google.drive({ version: 'v3', auth: authClient });
+  console.log('Google\'a (OAuth) giriş yapılıyor...');
+  const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+  oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+  const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
   console.log('Klasöre erişim test ediliyor...');
   try {
     const folderCheck = await drive.files.get({
       fileId: GOOGLE_DRIVE_FOLDER_ID,
-      fields: 'id, name, mimeType, driveId',
-      supportsAllDrives: true,
+      fields: 'id, name, mimeType',
     });
-    console.log('  Klasör bulundu: "' + folderCheck.data.name + '" (mimeType: ' + folderCheck.data.mimeType + ')');
+    console.log('  Klasör bulundu: "' + folderCheck.data.name + '"');
   } catch (folderErr) {
-    console.error('  Klasöre erişilemedi! Servis hesabının (' + creds.client_email + ') bu klasörle Editor olarak paylaşıldığından ve GOOGLE_DRIVE_FOLDER_ID değerinin doğru olduğundan emin ol.');
+    console.error('  Klasöre erişilemedi! GOOGLE_DRIVE_FOLDER_ID değerinin doğru olduğundan ve bu klasörün, yetkilendirme yaptığın Google hesabının kendi Drive\'ında olduğundan emin ol.');
     throw folderErr;
   }
 
@@ -83,7 +79,6 @@ async function main() {
     requestBody: { name: filename, parents: [GOOGLE_DRIVE_FOLDER_ID] },
     media: { mimeType: 'application/json', body: stream },
     fields: 'id',
-    supportsAllDrives: true,
   });
   console.log(filename + ' yüklendi. Tüm yedek tamamlandı.');
 }
