@@ -1,48 +1,28 @@
-name: Gunluk Yedekleme
+name: Otomatik Excel Yedek
 
 on:
   schedule:
-    - cron: '0 21 * * *'   # her gun TSI 00:00 civari (UTC 21:00)
-  workflow_dispatch: {}     # istersen Actions sekmesinden elle de calistirabilirsin
-
-permissions:
-  contents: write
+    - cron: '0 20 * * *'   # her gün 20:00 UTC = 23:00 Türkiye saati
+  workflow_dispatch: {}     # bu, "Run workflow" ile elle de tetiklenebilmesini sağlar
 
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Repoyu al
+      - name: Repoyu indir
         uses: actions/checkout@v4
 
-      - name: Supabase'den veriyi cek
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Paketleri kur
+        run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund
+
+      - name: Yedekleme scriptini çalıştır
         env:
-          SUPABASE_URL: "https://miekldpkuclbinclnvvu.supabase.co"
-          SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ"
-        run: |
-          mkdir -p backups
-          STAMP=$(date +%F)
-          OUT="backups/yedek-$STAMP.json"
-          echo "{" > "$OUT"
-          for T in classes students homeworks homework_status rubrics rubric_scores; do
-            echo "\"$T\": " >> "$OUT"
-            curl -s "$SUPABASE_URL/rest/v1/$T?select=*" \
-              -H "apikey: $SUPABASE_ANON_KEY" \
-              -H "Authorization: Bearer $SUPABASE_ANON_KEY" >> "$OUT"
-            if [ "$T" != "rubric_scores" ]; then echo "," >> "$OUT"; fi
-          done
-          echo "}" >> "$OUT"
-          cp "$OUT" backups/en-son-yedek.json
-
-      - name: Eski yedekleri temizle (son 30 gunu tut)
-        run: |
-          cd backups
-          ls -1t yedek-*.json 2>/dev/null | tail -n +31 | xargs -r rm --
-
-      - name: Degisiklikleri kaydet
-        run: |
-          git config user.name "Yedekleme Botu"
-          git config user.email "actions@github.com"
-          git add backups/
-          git diff --staged --quiet || git commit -m "Otomatik yedek: $(date +%F)"
-          git push
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: node .github/scripts/backup.mjs
